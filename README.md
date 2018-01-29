@@ -1,0 +1,2 @@
+#bStream - A Binary Reader/Writer for C++
+bStream is a endian binary reader/writer utility I made for my LM Tools based around the pre-existing c++ fstream. I decided that since I use it so much I may as well make a seperate repo for it, enjoy.
