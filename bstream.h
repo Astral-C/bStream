@@ -10,14 +10,15 @@ enum Endianess{
 class bStream {
 private:
 	std::fstream base;
-	std::string file_path;
-	int stream_pos;
-	int last_pos;
+	std::string filePath;
+	int anchor;
+	int lastPos;
 	Endianess order;
-
+	Endianess systemOrder;
 
 public:
 
+	Endianess getSystemEndianess();
 	void readStruct(void*, size_t);
 
 	//read functions
@@ -31,15 +32,15 @@ public:
 	char* readBytes(int);
 	std::string readString(int);
 
-    //write functions
-    void writeInt8(int8_t);
-    void writeUInt8(uint8_t);
-    void writeInt16(int16_t);
-    void writeUInt16(uint16_t);
-    void writeInt32(int32_t);
-    void writeUInt32(uint32_t);
-    void writeFloat(float);
-    void writeString(std::string);
+	//write functions
+	void writeInt8(int8_t);
+	void writeUInt8(uint8_t);
+	void writeInt16(int16_t);
+	void writeUInt16(uint16_t);
+	void writeInt32(int32_t);
+	void writeUInt32(uint32_t);
+	void writeFloat(float);
+	void writeString(std::string);
 
 	//utility functions
 	void seek(long);
@@ -49,13 +50,13 @@ public:
 	short peekI16(int);
 	int peekI32(int);
 
-    std::fstream &getStream();
+	std::fstream &getStream();
 
 	unsigned char peekU8(int);
 	unsigned short peekU16(int);
 	unsigned int peekU32(int);
 
-    bStream(std::string, Endianess, int rw = 0);
+	bStream(std::string, Endianess, int rw = 0);
 	bStream() {}
 	~bStream() {this->base.close();}
 };
