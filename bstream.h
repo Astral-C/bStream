@@ -43,18 +43,19 @@ public:
 	void writeString(std::string);
 
 	//utility functions
+	long tell();
 	void seek(long);
 	std::string getPath();
 
-	char peekI8(int);
-	short peekI16(int);
-	int peekI32(int);
+	uint8_t peekU8(int);
+	uint16_t peekU16(int);
+	uint32_t peekU32(int);
+
+	int8_t peekI8(int);
+	int16_t peekI16(int);
+	int32_t peekI32(int);
 
 	std::fstream &getStream();
-
-	unsigned char peekU8(int);
-	unsigned short peekU16(int);
-	unsigned int peekU32(int);
 
 	bStream(std::string, Endianess, int rw = 0);
 	bStream() {}

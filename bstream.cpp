@@ -33,6 +33,10 @@ void bStream::seek(long pos){
 	base.seekg(pos, base.beg);
 }
 
+long bStream::tell(){
+	return base.tellg();
+}
+
 uint32_t bStream::readUInt32(){
 	uint32_t r;
 	base.read((char*)&r, sizeof(uint32_t));
@@ -105,7 +109,7 @@ float bStream::readFloat(){
 }
 
 char* bStream::readBytes(int count){
-	char* buffer = (char*)std::malloc(count);
+	char* buffer = new char[count];
 	base.read(buffer, (size_t)count);
 	return buffer;
 }
@@ -175,3 +179,57 @@ void bStream::writeString(std::string v){
 void bStream::readStruct(void* out, size_t size){
 	base.read((char*)out, size);
 }
+
+uint8_t bStream::peekU8(int offset){
+	uint8_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt8();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+int8_t bStream::peekI8(int offset){
+	int8_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt8();
+	base.seekg(pos, base.beg);
+	return ret;
+} 
+
+uint16_t bStream::peekU16(int offset){
+	uint16_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt16();
+	base.seekg(pos, base.beg);
+	return ret;
+} 
+
+int16_t bStream::peekI16(int offset){
+	int16_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt16();
+	base.seekg(pos, base.beg);
+	return ret;
+} 
+
+uint32_t bStream::peekU32(int offset){
+	uint32_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt32();
+	base.seekg(pos, base.beg);
+	return ret;
+} 
+
+int32_t bStream::peekI32(int offset){
+	int32_t ret;
+	int pos = base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt32();
+	base.seekg(pos, base.beg);
+	return ret;
+} 
