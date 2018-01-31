@@ -5,12 +5,9 @@ bStream::bStream(std::string path, Endianess ord, int rw){
 	if(rw == 0) base.open(path, std::ios::in);
 	if(rw == 1) base.open(path, std::ios::out);
 	filePath = path;
-	anchor = 0;
-	lastPos = 0;
 	order = ord;
 	systemOrder = getSystemEndianess();
 }
-
 
 std::fstream &bStream::getStream(){
 	return base;
@@ -81,7 +78,6 @@ int16_t bStream::readInt16(){
 	}
 }
 
-
 uint8_t bStream::readUInt8(){
 	uint8_t r;
 	base.read((char*)&r, sizeof(uint8_t));
@@ -121,7 +117,6 @@ std::string bStream::readString(int len){
 	std::free(str);
 	return stdstr;
 }
-
 
 void bStream::writeInt8(int8_t v){
 	base.write((char*)&v, 1);
@@ -176,6 +171,10 @@ void bStream::writeString(std::string v){
 	base.write(v.c_str(), v.size());
 }
 
+void bStream::writeBytes(char* v, size_t size){
+	base.write(v, size);
+}
+
 void bStream::readStruct(void* out, size_t size){
 	base.read((char*)out, size);
 }
@@ -196,7 +195,7 @@ int8_t bStream::peekI8(int offset){
 	ret = readInt8();
 	base.seekg(pos, base.beg);
 	return ret;
-} 
+}
 
 uint16_t bStream::peekU16(int offset){
 	uint16_t ret;
@@ -205,7 +204,7 @@ uint16_t bStream::peekU16(int offset){
 	ret = readUInt16();
 	base.seekg(pos, base.beg);
 	return ret;
-} 
+}
 
 int16_t bStream::peekI16(int offset){
 	int16_t ret;
@@ -214,7 +213,7 @@ int16_t bStream::peekI16(int offset){
 	ret = readInt16();
 	base.seekg(pos, base.beg);
 	return ret;
-} 
+}
 
 uint32_t bStream::peekU32(int offset){
 	uint32_t ret;
@@ -223,7 +222,7 @@ uint32_t bStream::peekU32(int offset){
 	ret = readUInt32();
 	base.seekg(pos, base.beg);
 	return ret;
-} 
+}
 
 int32_t bStream::peekI32(int offset){
 	int32_t ret;
@@ -232,4 +231,4 @@ int32_t bStream::peekI32(int offset){
 	ret = readInt32();
 	base.seekg(pos, base.beg);
 	return ret;
-} 
+}

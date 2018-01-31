@@ -11,8 +11,6 @@ class bStream {
 private:
 	std::fstream base;
 	std::string filePath;
-	int anchor;
-	int lastPos;
 	Endianess order;
 	Endianess systemOrder;
 
@@ -40,6 +38,7 @@ public:
 	void writeInt32(int32_t);
 	void writeUInt32(uint32_t);
 	void writeFloat(float);
+	void writeBytes(char*, size_t);
 	void writeString(std::string);
 
 	//utility functions
