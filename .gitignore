@@ -33,3 +33,5 @@
 
 #for tests
 main.cpp
+*.arc
+.vscode/

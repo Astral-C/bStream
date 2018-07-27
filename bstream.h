@@ -2,12 +2,22 @@
 #include <iostream>
 #include <cstdint>
 #include <fstream>
+#include <cstring>
+
+namespace bStream {
+
+enum OpenMode {
+	in,
+	out
+};
 
 enum Endianess{
 	Big, Little
 };
 
-class bStream {
+Endianess getSystemEndianess();
+
+class CFileStream {
 private:
 	std::fstream base;
 	std::string filePath;
@@ -16,7 +26,6 @@ private:
 
 public:
 
-	Endianess getSystemEndianess();
 	void readStruct(void*, size_t);
 
 	//read functions
@@ -42,6 +51,7 @@ public:
 	void writeString(std::string);
 
 	//utility functions
+	size_t getSize();
 	long tell();
 	void seek(long);
 	std::string getPath();
@@ -56,7 +66,30 @@ public:
 
 	std::fstream &getStream();
 
-	bStream(std::string, Endianess, int rw = 0);
-	bStream() {}
-	~bStream() {this->base.close();}
+	CFileStream(std::string, Endianess, OpenMode mode = OpenMode::in);
+	CFileStream() {}
+	~CFileStream() {this->base.close();}
 };
+
+class CMemoryStream {
+	private:
+		uint8_t* mBuffer;
+		size_t mPosition;
+		size_t mSize;
+		
+		Endianess order;
+		Endianess systemOrder;
+	
+	public:
+
+		uint32_t readUInt32();
+		std::string readString(int len);
+
+		void seek(size_t pos);
+		CMemoryStream(uint8_t* ptr, size_t size, Endianess ord);
+		CMemoryStream(){}
+		~CMemoryStream(){}
+
+};
+
+}
