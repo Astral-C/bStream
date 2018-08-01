@@ -21,7 +21,7 @@ Endianess getSystemEndianess(){
 
 //TODO: Clean this garbo up
 CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mode){
-	base.open(path, (mode == OpenMode::In ? std::ios::in : std::ios::out));
+	base.open(path, (mode == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
 	filePath = path;
 	order = ord;
 	systemOrder = getSystemEndianess();
