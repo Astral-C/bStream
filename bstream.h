@@ -6,9 +6,19 @@
 
 namespace bStream {
 
+uint32_t swap32(uint32_t v);
+uint16_t swap16(uint16_t v);
+
+template < typename T >
+static inline const T * OffsetPointer(const void * ptr, size_t offs) {
+  uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
+  p += offs;
+  return reinterpret_cast<const T *>(p);
+}
+
 enum OpenMode {
-	in,
-	out
+	In,
+	Out
 };
 
 enum Endianess{
@@ -36,8 +46,9 @@ public:
 	int32_t readInt32();
 	uint32_t readUInt32();
 	float readFloat();
-	char* readBytes(int);
-	std::string readString(int);
+	char* readBytes(size_t);
+	std::string readWString(size_t);
+	std::string readString(size_t);
 
 	//write functions
 	void writeInt8(int8_t);
@@ -66,7 +77,7 @@ public:
 
 	std::fstream &getStream();
 
-	CFileStream(std::string, Endianess, OpenMode mode = OpenMode::in);
+	CFileStream(std::string, Endianess, OpenMode mode = OpenMode::In);
 	CFileStream() {}
 	~CFileStream() {this->base.close();}
 };
@@ -82,10 +93,21 @@ class CMemoryStream {
 	
 	public:
 
+		size_t getSize();
+		
+		int8_t readInt8();
+		uint8_t readUInt8();
+
+		int16_t readInt16();
+		uint16_t readUInt16();
+
+		int32_t readInt32();
 		uint32_t readUInt32();
-		std::string readString(int len);
+
+		std::string readString(size_t);
 
 		void seek(size_t pos);
+
 		CMemoryStream(uint8_t* ptr, size_t size, Endianess ord);
 		CMemoryStream(){}
 		~CMemoryStream(){}

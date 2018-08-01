@@ -1,6 +1,14 @@
 #include "bstream.h"
-#define OffsetPointer(ptr, offset) ((void*)((char *)(ptr) + (offset)))
+
 namespace bStream {
+
+uint32_t swap32(uint32_t r){
+	return ( ((r>>24)&0xFF) | ((r<<8) & 0xFF0000) | ((r>>8)&0xFF00) | ((r<<24)&0xFF000000));
+}
+
+uint16_t swap16(uint16_t r){
+	return ( ((r<<8)&0xFF00) | ((r>>8)&0x00FF) );
+}
 
 Endianess getSystemEndianess(){
 	union {
@@ -13,7 +21,7 @@ Endianess getSystemEndianess(){
 
 //TODO: Clean this garbo up
 CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mode){
-	base.open(path, (mode == OpenMode::in ? std::ios::in : std::ios::out));
+	base.open(path, (mode == OpenMode::In ? std::ios::in : std::ios::out));
 	filePath = path;
 	order = ord;
 	systemOrder = getSystemEndianess();
@@ -40,7 +48,7 @@ uint32_t CFileStream::readUInt32(){
 	uint32_t r;
 	base.read((char*)&r, sizeof(uint32_t));
 	if(order != systemOrder){
-		return ( ((r>>24)&0xFF) | ((r<<8) & 0xFF0000) | ((r>>8)&0xFF00) | ((r<<24)&0xFF000000));
+		return swap32(r);
 	}
 	else{
 		return r;
@@ -51,7 +59,7 @@ int32_t CFileStream::readInt32(){
 	int32_t r;
 	base.read((char*)&r, sizeof(int32_t));
 	if(order != systemOrder){
-		return ( ((r>>24)&0xFF) | ((r<<8) & 0xFF0000) | ((r>>8)&0xFF00) | ((r<<24)&0xFF000000));
+		return swap32(r);
 	}
 	else{
 		return r;
@@ -62,7 +70,7 @@ uint16_t CFileStream::readUInt16(){
 	uint16_t r;
 	base.read((char*)&r, sizeof(uint16_t));
 	if(order != systemOrder){
-		return ( ((r<<8)&0xFF00) | ((r>>8)&0x00FF) );
+		return swap16(r);
 	}
 	else{
 		return r;
@@ -73,7 +81,7 @@ int16_t CFileStream::readInt16(){
 	int16_t r;
 	base.read((char*)&r, sizeof(int16_t));
 	if(order != systemOrder){
-		return ( ((r<<8)&0xFF00) | ((r>>8)&0x00FF) );
+		return swap16(r);
 	}
 	else{
 		return r;
@@ -92,6 +100,7 @@ int8_t CFileStream::readInt8(){
 	return r;
 }
 
+//todo: think of how to clean this up
 float CFileStream::readFloat(){
 	char buff[sizeof(float)];
 	base.read(buff, sizeof(float));
@@ -106,18 +115,22 @@ float CFileStream::readFloat(){
 	return *((float*)buff);
 }
 
-char* CFileStream::readBytes(int count){
-	char* buffer = new char[count];
-	base.read(buffer, (size_t)count);
+char* CFileStream::readBytes(size_t size){
+	char* buffer = new char[size];
+	base.read(buffer, size);
 	return buffer;
 }
 
-std::string CFileStream::readString(int len){
-	char* str = (char*)std::malloc(len);
-	base.read(str, len);
-	std::string stdstr(str);
-	std::free(str);
-	return stdstr;
+std::string CFileStream::readString(size_t len){
+    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
+    base.read(&str[0], len);
+    return str;
+}
+
+std::string CFileStream::readWString(size_t len){
+    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
+    base.read(&str[0], len);
+    return str;
 }
 
 void CFileStream::writeInt8(int8_t v){
@@ -130,28 +143,28 @@ void CFileStream::writeUInt8(uint8_t v){
 
 void CFileStream::writeInt16(int16_t v){
 	if(order != systemOrder){
-		v = (((v<<8)&0xFF00) | ((v>>8)&0x00FF));
+		v = swap16(v);
 	}
 	base.write((char*)&v, sizeof(uint16_t));
 }
 
 void CFileStream::writeUInt16(uint16_t v){
 	if(order != systemOrder){
-		v = (((v<<8)&0xFF00) | ((v>>8)&0x00FF));
+		v = swap16(v);
 	}
 	base.write((char*)&v, sizeof(uint16_t));
 }
 
 void CFileStream::writeInt32(int32_t v){
 	if(order != systemOrder){
-	   v = (((v>>24)&0xFF) | ((v<<8) & 0xFF0000) | ((v>>8)&0xFF00) | ((v<<24)&0xFF000000));
+	   v = swap32(v);
 	}
 	base.write((char*)&v, sizeof(int32_t));
 }
 
 void CFileStream::writeUInt32(uint32_t v){
 	if(order != systemOrder){
-	   v = (((v>>24)&0xFF) | ((v<<8) & 0xFF0000) | ((v>>8)&0xFF00) | ((v<<24)&0xFF000000));
+	   v = swap32(v);
 	}
 	base.write((char*)&v, sizeof(uint32_t));
 }
@@ -251,31 +264,87 @@ CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord){
 	systemOrder = getSystemEndianess();
 }
 
+size_t CMemoryStream::getSize(){
+	return mSize;
+}
+
 void CMemoryStream::seek(size_t pos){
 	mPosition = (pos > mSize ? mPosition : pos);
 }
 
 //TODO: Make it so that you cant read past the end of the stream
 
-uint32_t CMemoryStream::readUInt32(){
-	
-	uint32_t r;
-	memcpy(&r, OffsetPointer(mBuffer, mPosition), sizeof(uint32_t));
-	mPosition += sizeof(uint32_t);
+int8_t CMemoryStream::readInt8(){
+	int8_t r;
+	memcpy(&r, OffsetPointer<int8_t>(mBuffer, mPosition), sizeof(int8_t));
+	mPosition++;
+	return r;
+}
+
+uint8_t CMemoryStream::readUInt8(){
+	uint8_t r;
+	memcpy(&r, OffsetPointer<uint8_t>(mBuffer, mPosition), sizeof(uint8_t));
+	mPosition++;
+	return r;
+}
+
+int16_t CMemoryStream::readInt16(){
+	int16_t r;
+	memcpy(&r, OffsetPointer<int16_t>(mBuffer, mPosition), sizeof(int16_t));
+	mPosition += sizeof(int16_t);
 
 	if(order != systemOrder){
-		return ( ((r>>24)&0xFF) | ((r<<8) & 0xFF0000) | ((r>>8)&0xFF00) | ((r<<24)&0xFF000000));
+		return swap16(r);
 	}
 	else{
 		return r;
 	}
 }
 
-std::string CMemoryStream::readString(int len){
-	char str[len];
-	strncpy(str, (char*)OffsetPointer(mBuffer, mPosition), len);
+uint16_t CMemoryStream::readUInt16(){
+	uint16_t r;
+	memcpy(&r, OffsetPointer<uint16_t>(mBuffer, mPosition), sizeof(uint16_t));
+	mPosition += sizeof(uint16_t);
+
+	if(order != systemOrder){
+		return swap16(r);
+	}
+	else{
+		return r;
+	}
+}
+
+uint32_t CMemoryStream::readUInt32(){	
+	uint32_t r;
+	memcpy(&r, OffsetPointer<uint32_t>(mBuffer, mPosition), sizeof(uint32_t));
+	mPosition += sizeof(uint32_t);
+
+	if(order != systemOrder){
+		return swap32(r);
+	}
+	else{
+		return r;
+	}
+}
+
+int32_t CMemoryStream::readInt32(){
+	int32_t r;
+	memcpy(&r, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+
+	if(order != systemOrder){
+		return swap32(r);
+	}
+	else{
+		return r;
+	}
+}
+
+std::string CMemoryStream::readString(size_t len){
+	std::string str('\0', len);
+	strncpy(&str[0], OffsetPointer<char>(mBuffer, mPosition), len);
 	mPosition += len;
-	return std::string(str);
+	return str;
 }
 
 }
