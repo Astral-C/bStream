@@ -5,11 +5,10 @@ bStream is a header only library for file io in c++ that wraps an `std::fstream`
 To include bStream in your project simply put 
 ```cpp
 #define BSTREAM_IMPLEMENTATION
-#include "bstream.h"
 ``` 
-in _one_ of the files where you are including bStream. Alternatively you can simple add bstream.cpp to your projects files and it will handle this for you.
+in _one_ of the files where you are including bStream. Alternatively you can simply add bstream.cpp to your project's files and it will handle this for you.
 
-Once you have bStream included you simple open a `CFileStream` specifying an endianess and open mode (defaults to in if not specified), ex
+Once you have bStream included you simply open a `CFileStream` specifying an endianess and open mode (which defaults to in if not specified), ex
 ```
 bStream::CFileStream file("path/to/file.bin", bStream::Endianess::Big, bStream::OpenMode::In);
 ``` 
@@ -19,4 +18,4 @@ bStream::CFileStream file = new bStream::CFileStream("path/to/file.bin", bStream
 ```
 
 ## TODO
-Currently open mode isnt properly set and all streams are read write. This is not intended (there is meant to be seperate read streams and write streams) however to properly overwrite parts of a file you must use the in, out, and binary flags for opening an fstream. This will be fixed in the future and it is reccomended that you design your programs with seperate read and write streams in mind, if you do not your code may no longer work once this is fixed.
+Currently open mode isn't properly set and all streams are read write. This is not intended (there is meant to be seperate read streams and write streams) however to properly overwrite parts of a file you must use the in, out, and binary flags for opening an fstream. This will be fixed in the future and it is reccomended that you design your programs with seperate read and write streams in mind, if you do not your code may no longer work once this is fixed.
