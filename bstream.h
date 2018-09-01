@@ -31,6 +31,7 @@ class CFileStream {
 private:
 	std::fstream base;
 	std::string filePath;
+	OpenMode mode;
 	Endianess order;
 	Endianess systemOrder;
 
@@ -77,7 +78,7 @@ public:
 
 	std::fstream &getStream();
 
-	CFileStream(std::string, Endianess, OpenMode mode = OpenMode::In);
+	CFileStream(std::string, Endianess, OpenMode mod = OpenMode::In);
 	CFileStream() {}
 	~CFileStream() {this->base.close();}
 };
@@ -136,10 +137,11 @@ Endianess getSystemEndianess(){
 }
 
 //TODO: Clean this garbo up
-CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mode){
-	base.open(path, (mode == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
+CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
+	base.open(path, std::ios::in | std::ios::out | std::ios::binary);
 	filePath = path;
 	order = ord;
+	mode = mod;
 	systemOrder = getSystemEndianess();
 }
 
