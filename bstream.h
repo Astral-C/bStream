@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <fstream>
 #include <cstring>
+#include <cassert>
 
 namespace bStream {
 
@@ -163,6 +164,7 @@ long CFileStream::tell(){
 }
 
 uint32_t CFileStream::readUInt32(){
+	assert(mode == OpenMode::In);
 	uint32_t r;
 	base.read((char*)&r, sizeof(uint32_t));
 	if(order != systemOrder){
@@ -174,6 +176,7 @@ uint32_t CFileStream::readUInt32(){
 }
 
 int32_t CFileStream::readInt32(){
+	assert(mode == OpenMode::In);
 	int32_t r;
 	base.read((char*)&r, sizeof(int32_t));
 	if(order != systemOrder){
@@ -185,6 +188,7 @@ int32_t CFileStream::readInt32(){
 }
 
 uint16_t CFileStream::readUInt16(){
+	assert(mode == OpenMode::In);
 	uint16_t r;
 	base.read((char*)&r, sizeof(uint16_t));
 	if(order != systemOrder){
@@ -196,6 +200,7 @@ uint16_t CFileStream::readUInt16(){
 }
 
 int16_t CFileStream::readInt16(){
+	assert(mode == OpenMode::In);
 	int16_t r;
 	base.read((char*)&r, sizeof(int16_t));
 	if(order != systemOrder){
@@ -207,12 +212,14 @@ int16_t CFileStream::readInt16(){
 }
 
 uint8_t CFileStream::readUInt8(){
+	assert(mode == OpenMode::In);
 	uint8_t r;
 	base.read((char*)&r, sizeof(uint8_t));
 	return r;
 }
 
 int8_t CFileStream::readInt8(){
+	assert(mode == OpenMode::In);
 	int8_t r;
 	base.read((char*)&r, sizeof(int8_t));
 	return r;
@@ -220,6 +227,7 @@ int8_t CFileStream::readInt8(){
 
 //todo: think of how to clean this up
 float CFileStream::readFloat(){
+	assert(mode == OpenMode::In);
 	char buff[sizeof(float)];
 	base.read(buff, sizeof(float));
 	if(order != systemOrder){
@@ -234,32 +242,38 @@ float CFileStream::readFloat(){
 }
 
 char* CFileStream::readBytes(size_t size){
+	assert(mode == OpenMode::In);
 	char* buffer = new char[size];
 	base.read(buffer, size);
 	return buffer;
 }
 
 std::string CFileStream::readString(size_t len){
+	assert(mode == OpenMode::In);
     std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
     base.read(&str[0], len);
     return str;
 }
 
 std::string CFileStream::readWString(size_t len){
+	assert(mode == OpenMode::In);
     std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
     base.read(&str[0], len);
     return str;
 }
 
 void CFileStream::writeInt8(int8_t v){
+	assert(mode == OpenMode::Out);
 	base.write((char*)&v, 1);
 }
 
 void CFileStream::writeUInt8(uint8_t v){
+	assert(mode == OpenMode::Out);
 	base.write((char*)&v, 1);
 }
 
 void CFileStream::writeInt16(int16_t v){
+	assert(mode == OpenMode::Out);
 	if(order != systemOrder){
 		v = swap16(v);
 	}
@@ -267,6 +281,7 @@ void CFileStream::writeInt16(int16_t v){
 }
 
 void CFileStream::writeUInt16(uint16_t v){
+	assert(mode == OpenMode::Out);
 	if(order != systemOrder){
 		v = swap16(v);
 	}
@@ -274,6 +289,7 @@ void CFileStream::writeUInt16(uint16_t v){
 }
 
 void CFileStream::writeInt32(int32_t v){
+	assert(mode == OpenMode::Out);
 	if(order != systemOrder){
 	   v = swap32(v);
 	}
@@ -281,6 +297,7 @@ void CFileStream::writeInt32(int32_t v){
 }
 
 void CFileStream::writeUInt32(uint32_t v){
+	assert(mode == OpenMode::Out);
 	if(order != systemOrder){
 	   v = swap32(v);
 	}
@@ -288,6 +305,7 @@ void CFileStream::writeUInt32(uint32_t v){
 }
 
 void CFileStream::writeFloat(float v){
+	assert(mode == OpenMode::Out);
 	char* buff = (char*)&v;
 	if(order != systemOrder){
 		char temp[sizeof(float)];
@@ -301,18 +319,22 @@ void CFileStream::writeFloat(float v){
 }
 
 void CFileStream::writeString(std::string v){
+	assert(mode == OpenMode::Out);
 	base.write(v.c_str(), v.size());
 }
 
 void CFileStream::writeBytes(char* v, size_t size){
+	assert(mode == OpenMode::Out);
 	base.write(v, size);
 }
 
 void CFileStream::readStruct(void* out, size_t size){
+	assert(mode == OpenMode::In);
 	base.read((char*)out, size);
 }
 
 uint8_t CFileStream::peekU8(int offset){
+	assert(mode == OpenMode::In);
 	uint8_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
@@ -322,6 +344,7 @@ uint8_t CFileStream::peekU8(int offset){
 }
 
 int8_t CFileStream::peekI8(int offset){
+	assert(mode == OpenMode::In);
 	int8_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
@@ -331,6 +354,7 @@ int8_t CFileStream::peekI8(int offset){
 }
 
 uint16_t CFileStream::peekU16(int offset){
+	assert(mode == OpenMode::In);
 	uint16_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
@@ -340,6 +364,7 @@ uint16_t CFileStream::peekU16(int offset){
 }
 
 int16_t CFileStream::peekI16(int offset){
+	assert(mode == OpenMode::In);
 	int16_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
@@ -349,6 +374,7 @@ int16_t CFileStream::peekI16(int offset){
 }
 
 uint32_t CFileStream::peekU32(int offset){
+	assert(mode == OpenMode::In);
 	uint32_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
@@ -358,6 +384,7 @@ uint32_t CFileStream::peekU32(int offset){
 }
 
 int32_t CFileStream::peekI32(int offset){
+	assert(mode == OpenMode::In);
 	int32_t ret;
 	int pos = base.tellg();
 	base.seekg(offset, base.beg);
