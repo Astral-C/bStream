@@ -17,6 +17,13 @@ static inline const T * OffsetPointer(const void * ptr, size_t offs) {
   return reinterpret_cast<const T *>(p);
 }
 
+template < typename T >
+static inline T * OffsetWritePointer(void * ptr, size_t offs) {
+  uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
+  p += offs;
+  return reinterpret_cast<T *>(p);
+}
+
 enum OpenMode {
 	In,
 	Out
@@ -80,6 +87,7 @@ public:
 	std::fstream &getStream();
 
 	CFileStream(std::string, Endianess, OpenMode mod = OpenMode::In);
+	CFileStream(std::string, OpenMode mod = OpenMode::In);
 	CFileStream() {}
 	~CFileStream() {this->base.close();}
 };
@@ -89,13 +97,19 @@ class CMemoryStream {
 		uint8_t* mBuffer;
 		size_t mPosition;
 		size_t mSize;
-		
+		size_t mCapacity;
+		int8_t mHasInternalBuffer;
+
+		OpenMode mOpenMode;
 		Endianess order;
 		Endianess systemOrder;
+
+		bool Reserve(size_t);
 	
 	public:
 
 		size_t getSize();
+		size_t getCapacity();
 		
 		int8_t readInt8();
 		uint8_t readUInt8();
@@ -106,11 +120,26 @@ class CMemoryStream {
 		int32_t readInt32();
 		uint32_t readUInt32();
 
+		void writeInt8(int8_t);
+		void writeUInt8(uint8_t);
+		
+		void writeInt16(int16_t);
+		void writeUInt16(uint16_t);
+
+		void writeInt32(int32_t);
+		void writeUInt32(uint32_t);
+
+		void writeFloat(float);
+		void writeBytes(char*, size_t);
+
 		std::string readString(size_t);
 
 		void seek(size_t pos);
 
-		CMemoryStream(uint8_t* ptr, size_t size, Endianess ord);
+		uint8_t* getBuffer();
+
+		CMemoryStream(uint8_t*, size_t, Endianess, OpenMode);
+		CMemoryStream(size_t, Endianess, OpenMode);
 		CMemoryStream(){}
 		~CMemoryStream(){}
 
@@ -137,13 +166,20 @@ Endianess getSystemEndianess(){
 	return (check.bytes[0] == 0x01 ? Endianess::Big : Endianess::Little);
 }
 
-//TODO: Clean this garbo up
 CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
 	base.open(path, std::ios::in | std::ios::out | std::ios::binary);
 	filePath = path;
 	order = ord;
 	mode = mod;
 	systemOrder = getSystemEndianess();
+}
+
+CFileStream::CFileStream(std::string path, OpenMode mod){
+	base.open(path, std::ios::in | std::ios::out | std::ios::binary);
+	filePath = path;
+	mode = mod;
+	systemOrder = getSystemEndianess();
+	order = getSystemEndianess();
 }
 
 std::fstream &CFileStream::getStream(){
@@ -225,7 +261,6 @@ int8_t CFileStream::readInt8(){
 	return r;
 }
 
-//todo: think of how to clean this up
 float CFileStream::readFloat(){
 	assert(mode == OpenMode::In);
 	char buff[sizeof(float)];
@@ -401,10 +436,31 @@ size_t CFileStream::getSize(){
 	return ret;
 }
 
-CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord){
+///
+///
+///  CMemoryStream
+///
+///
+
+
+CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode mode){
 	mBuffer = ptr;
 	mPosition = 0;
 	mSize = size;
+	mCapacity = size;
+	mHasInternalBuffer = false;
+	mOpenMode = mode; 
+	order = ord;
+	systemOrder = getSystemEndianess();
+}
+
+CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
+	mBuffer = new uint8_t[size];
+	mPosition = 0;
+	mSize = size;
+	mCapacity = size;
+	mHasInternalBuffer = true;
+	mOpenMode = mode;
 	order = ord;
 	systemOrder = getSystemEndianess();
 }
@@ -413,13 +469,24 @@ size_t CMemoryStream::getSize(){
 	return mSize;
 }
 
+size_t CMemoryStream::getCapacity(){
+	return mCapacity;
+}
+
 void CMemoryStream::seek(size_t pos){
 	mPosition = (pos > mSize ? mPosition : pos);
 }
 
-//TODO: Make it so that you cant read past the end of the stream
+uint8_t* CMemoryStream::getBuffer(){
+	return mBuffer;
+}
+
+///
+/// Memstream Reading Functions
+///
 
 int8_t CMemoryStream::readInt8(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	int8_t r;
 	memcpy(&r, OffsetPointer<int8_t>(mBuffer, mPosition), sizeof(int8_t));
 	mPosition++;
@@ -427,6 +494,7 @@ int8_t CMemoryStream::readInt8(){
 }
 
 uint8_t CMemoryStream::readUInt8(){
+	assert(mOpenMode == OpenMode::In);
 	uint8_t r;
 	memcpy(&r, OffsetPointer<uint8_t>(mBuffer, mPosition), sizeof(uint8_t));
 	mPosition++;
@@ -434,6 +502,7 @@ uint8_t CMemoryStream::readUInt8(){
 }
 
 int16_t CMemoryStream::readInt16(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	int16_t r;
 	memcpy(&r, OffsetPointer<int16_t>(mBuffer, mPosition), sizeof(int16_t));
 	mPosition += sizeof(int16_t);
@@ -447,6 +516,7 @@ int16_t CMemoryStream::readInt16(){
 }
 
 uint16_t CMemoryStream::readUInt16(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	uint16_t r;
 	memcpy(&r, OffsetPointer<uint16_t>(mBuffer, mPosition), sizeof(uint16_t));
 	mPosition += sizeof(uint16_t);
@@ -459,7 +529,8 @@ uint16_t CMemoryStream::readUInt16(){
 	}
 }
 
-uint32_t CMemoryStream::readUInt32(){	
+uint32_t CMemoryStream::readUInt32(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	uint32_t r;
 	memcpy(&r, OffsetPointer<uint32_t>(mBuffer, mPosition), sizeof(uint32_t));
 	mPosition += sizeof(uint32_t);
@@ -473,6 +544,7 @@ uint32_t CMemoryStream::readUInt32(){
 }
 
 int32_t CMemoryStream::readInt32(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	int32_t r;
 	memcpy(&r, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(int32_t));
 	mPosition += sizeof(int32_t);
@@ -486,10 +558,39 @@ int32_t CMemoryStream::readInt32(){
 }
 
 std::string CMemoryStream::readString(size_t len){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	std::string str('\0', len);
 	strncpy(&str[0], OffsetPointer<char>(mBuffer, mPosition), len);
 	mPosition += len;
 	return str;
+}
+
+///
+/// Memstream Writing Functions
+///
+
+//included in writing functions because this is needed when using an internal buffer
+bool CMemoryStream::Reserve(size_t needed){
+	if(mCapacity >= needed){
+		return true;
+	}
+	if(!mHasInternalBuffer){
+		return false;
+	}
+
+	mCapacity *= 2;
+	uint8_t* temp = new uint8_t[mCapacity];
+	memcpy(temp, mBuffer, mSize);
+	delete[] mBuffer;
+	mBuffer = temp;
+
+	return true;
+}
+
+void CMemoryStream::writeUInt8(uint8_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
+	mPosition += sizeof(int8_t);
 }
 
 }
