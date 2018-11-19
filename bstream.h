@@ -131,6 +131,7 @@ class CMemoryStream {
 
 		void writeFloat(float);
 		void writeBytes(char*, size_t);
+		void writeString(std::string);
 
 		std::string readString(size_t);
 
@@ -559,8 +560,7 @@ int32_t CMemoryStream::readInt32(){
 
 std::string CMemoryStream::readString(size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
-	std::string str('\0', len);
-	strncpy(&str[0], OffsetPointer<char>(mBuffer, mPosition), len);
+	std::string str(OffsetPointer<char>(mBuffer, mPosition), mPosition+len);
 	mPosition += len;
 	return str;
 }
@@ -587,10 +587,61 @@ bool CMemoryStream::Reserve(size_t needed){
 	return true;
 }
 
+void CMemoryStream::writeInt8(int8_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<int8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
+	mPosition += sizeof(int8_t);
+}
+
 void CMemoryStream::writeUInt8(uint8_t v){
 	Reserve(mPosition + sizeof(v));
 	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
 	mPosition += sizeof(int8_t);
+}
+
+void CMemoryStream::writeInt16(int16_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<int16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
+	mPosition += sizeof(int16_t);
+}
+
+void CMemoryStream::writeUInt16(uint16_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<uint16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
+	mPosition += sizeof(int16_t);
+}
+
+void CMemoryStream::writeInt32(int32_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<int32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+}
+
+void CMemoryStream::writeUInt32(uint32_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<uint32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+}
+
+void CMemoryStream::writeFloat(float v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<float>(mBuffer, mPosition), &v, sizeof(float));
+	mPosition += sizeof(float);
+}
+
+
+//TODO: Clean these up and test them more
+
+void CMemoryStream::writeBytes(char* bytes, size_t size){
+	Reserve(mPosition + size);
+	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), &bytes, size);
+	mPosition += size;
+}
+
+void CMemoryStream::writeString(std::string str){
+	Reserve(mPosition + str.size());
+	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), str.data(), str.size());
+	mPosition += str.size();
 }
 
 }
