@@ -142,7 +142,11 @@ class CMemoryStream {
 		CMemoryStream(uint8_t*, size_t, Endianess, OpenMode);
 		CMemoryStream(size_t, Endianess, OpenMode);
 		CMemoryStream(){}
-		~CMemoryStream(){}
+		~CMemoryStream(){
+			if(mHasInternalBuffer){
+				delete[] mBuffer;
+			}
+		}
 
 };
 }
