@@ -70,6 +70,8 @@ class CStream {
 		virtual void writeInt16(int16_t) = 0;
 		virtual void writeUInt16(uint16_t) = 0;
 
+		virtual void readBytesTo(uint8_t*, size_t) = 0;
+
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(size_t, size_t) = 0;
 		virtual std::string readString(size_t) = 0;
@@ -104,6 +106,7 @@ public:
 	char* readBytes(size_t);
 	std::string readWString(size_t);
 	std::string readString(size_t);
+	void readBytesTo(uint8_t*, size_t);
 
 	//write functions
 	void writeInt8(int8_t);
@@ -196,6 +199,7 @@ class CMemoryStream : public CStream {
 
 		std::string readString(size_t);
 		std::string peekString(size_t, size_t);
+		void readBytesTo(uint8_t*, size_t);
 
 		void seek(size_t, bool = false);
 		void skip(size_t);
@@ -353,6 +357,11 @@ char* CFileStream::readBytes(size_t size){
 	char* buffer = new char[size];
 	base.read(buffer, size);
 	return buffer;
+}
+
+void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len){
+	assert(mode == OpenMode::In);
+	base.read(out_buffer, len);
 }
 
 std::string CFileStream::readString(size_t len){
@@ -744,6 +753,14 @@ std::string CMemoryStream::peekString(size_t at, size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	std::string str(OffsetPointer<char>(mBuffer, at), OffsetPointer<char>(mBuffer, at+len));
 	return str;
+}
+
+//I don't like this set up, but for now it works
+void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	if(mPosition + len < mSize){
+		memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
+	}
 }
 
 ///
