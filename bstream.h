@@ -832,7 +832,7 @@ void CMemoryStream::writeFloat(float v){
 
 void CMemoryStream::writeBytes(char* bytes, size_t size){
 	Reserve(mPosition + size);
-	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), &bytes, size);
+	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), bytes, size);
 	mPosition += size;
 }
 
