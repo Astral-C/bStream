@@ -361,7 +361,7 @@ char* CFileStream::readBytes(size_t size){
 
 void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len){
 	assert(mode == OpenMode::In);
-	base.read(out_buffer, len);
+	base.read((char*)out_buffer, len);
 }
 
 std::string CFileStream::readString(size_t len){
@@ -457,7 +457,7 @@ void CFileStream::writeBytes(char* v, size_t size){
 uint8_t CFileStream::peekUInt8(size_t offset){
 	assert(mode == OpenMode::In);
 	uint8_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readUInt8();
 	base.seekg(pos, base.beg);
@@ -467,7 +467,7 @@ uint8_t CFileStream::peekUInt8(size_t offset){
 int8_t CFileStream::peekInt8(size_t offset){
 	assert(mode == OpenMode::In);
 	int8_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readInt8();
 	base.seekg(pos, base.beg);
@@ -477,7 +477,7 @@ int8_t CFileStream::peekInt8(size_t offset){
 uint16_t CFileStream::peekUInt16(size_t offset){
 	assert(mode == OpenMode::In);
 	uint16_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readUInt16();
 	base.seekg(pos, base.beg);
@@ -487,7 +487,7 @@ uint16_t CFileStream::peekUInt16(size_t offset){
 int16_t CFileStream::peekInt16(size_t offset){
 	assert(mode == OpenMode::In);
 	int16_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readInt16();
 	base.seekg(pos, base.beg);
@@ -497,7 +497,7 @@ int16_t CFileStream::peekInt16(size_t offset){
 uint32_t CFileStream::peekUInt32(size_t offset){
 	assert(mode == OpenMode::In);
 	uint32_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readUInt32();
 	base.seekg(pos, base.beg);
@@ -507,7 +507,7 @@ uint32_t CFileStream::peekUInt32(size_t offset){
 int32_t CFileStream::peekInt32(size_t offset){
 	assert(mode == OpenMode::In);
 	int32_t ret;
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(offset, base.beg);
 	ret = readInt32();
 	base.seekg(pos, base.beg);
@@ -515,7 +515,7 @@ int32_t CFileStream::peekInt32(size_t offset){
 }
 
 size_t CFileStream::getSize(){
-	int pos = base.tellg();
+	int pos = (int)base.tellg();
 	base.seekg(0, std::ios::end);
 	size_t ret = base.tellg();
 	base.seekg(pos, std::ios::beg);
@@ -799,30 +799,50 @@ void CMemoryStream::writeUInt8(uint8_t v){
 
 void CMemoryStream::writeInt16(int16_t v){
 	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap16(v);
+
 	memcpy(OffsetWritePointer<int16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
 	mPosition += sizeof(int16_t);
 }
 
 void CMemoryStream::writeUInt16(uint16_t v){
 	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap16(v);
+
 	memcpy(OffsetWritePointer<uint16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
 	mPosition += sizeof(int16_t);
 }
 
 void CMemoryStream::writeInt32(int32_t v){
 	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap32(v);
+
 	memcpy(OffsetWritePointer<int32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
 	mPosition += sizeof(int32_t);
 }
 
 void CMemoryStream::writeUInt32(uint32_t v){
 	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap32(v);
+
 	memcpy(OffsetWritePointer<uint32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
 	mPosition += sizeof(int32_t);
 }
 
 void CMemoryStream::writeFloat(float v){
 	Reserve(mPosition + sizeof(v));
+
+	if (order != systemOrder)
+		v = swap32(v);
+
 	memcpy(OffsetWritePointer<float>(mBuffer, mPosition), &v, sizeof(float));
 	mPosition += sizeof(float);
 }
