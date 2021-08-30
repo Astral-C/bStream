@@ -37,7 +37,7 @@ Endianess getSystemEndianess();
 
 class CStream {
 	public:
-		virtual void seek(size_t, bool = false) = 0;
+		virtual bool seek(size_t, bool = false) = 0;
 		virtual void skip(size_t) = 0;
 		virtual size_t tell() = 0;
 
@@ -122,7 +122,7 @@ public:
 	//utility functions
 	size_t getSize();
 	size_t tell();
-	void seek(size_t, bool = false);
+	bool seek(size_t, bool = false);
 	void skip(size_t);
 	std::string getPath();
 
@@ -201,7 +201,7 @@ class CMemoryStream : public CStream {
 		std::string peekString(size_t, size_t);
 		void readBytesTo(uint8_t*, size_t);
 
-		void seek(size_t, bool = false);
+		bool seek(size_t, bool = false);
 		void skip(size_t);
 		size_t tell();
 
@@ -241,6 +241,7 @@ Endianess getSystemEndianess(){
 
 CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
 	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
+	base.exceptions(ifstream::badbit);
 	filePath = path;
 	order = ord;
 	mode = mod;
@@ -249,6 +250,7 @@ CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
 
 CFileStream::CFileStream(std::string path, OpenMode mod){
 	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
+	base.exceptions(ifstream::badbit);
 	filePath = path;
 	mode = mod;
 	systemOrder = getSystemEndianess();
@@ -263,8 +265,13 @@ std::string CFileStream::getPath(){
 	return filePath;
 }
 
-void CFileStream::seek(size_t pos, bool fromCurrent){
-	base.seekg(pos, (fromCurrent ? base.cur : base.beg));
+bool CFileStream::seek(size_t pos, bool fromCurrent){
+	try {
+		base.seekg(pos, (fromCurrent ? base.cur : base.beg));
+		return true;
+	} catch (const ifstream::failure& f) {
+		return false;
+	}
 }
 
 void CFileStream::skip(size_t amount){
@@ -559,8 +566,18 @@ size_t CMemoryStream::getCapacity(){
 	return mCapacity;
 }
 
-void CMemoryStream::seek(size_t pos, bool fromCurrent){
-	mPosition = (pos < mSize ? mPosition : (fromCurrent && mPosition + pos < mSize ? mPosition + pos : pos));
+bool CMemoryStream::seek(size_t pos, bool fromCurrent){
+	if(fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false; 
+	
+	if(fromCurrent){
+		mPosition += pos;
+	} else {
+		mPosition = pos;
+	}
+	
+	if(mPosition > mSize) mSize = mPosition;
+	
+	return true;
 }
 
 void CMemoryStream::skip(size_t amount){
