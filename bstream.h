@@ -241,7 +241,7 @@ Endianess getSystemEndianess(){
 
 CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
 	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
-	base.exceptions(ifstream::badbit);
+	base.exceptions(std::ifstream::badbit);
 	filePath = path;
 	order = ord;
 	mode = mod;
@@ -250,7 +250,7 @@ CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
 
 CFileStream::CFileStream(std::string path, OpenMode mod){
 	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
-	base.exceptions(ifstream::badbit);
+	base.exceptions(std::ifstream::badbit);
 	filePath = path;
 	mode = mod;
 	systemOrder = getSystemEndianess();
@@ -269,7 +269,7 @@ bool CFileStream::seek(size_t pos, bool fromCurrent){
 	try {
 		base.seekg(pos, (fromCurrent ? base.cur : base.beg));
 		return true;
-	} catch (const ifstream::failure& f) {
+	} catch (const std::ifstream::failure& f) {
 		return false;
 	}
 }
