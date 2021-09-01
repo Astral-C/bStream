@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cstring>
 #include <cassert>
-#include <vector>
 
 namespace bStream {
 
@@ -218,1063 +217,667 @@ class CMemoryStream : public CStream {
 		}
 
 };
-
-class CDynamicMemoryStream : CStream {
-	private:
-		std::vector<uint8_t> mBuffer;
-		size_t mPosition;
-		int8_t mHasInternalBuffer;
-
-		OpenMode mOpenMode;
-		Endianess order;
-		Endianess systemOrder;
-
-	public:
-
-		size_t getSize();
-		size_t getCapacity();
-
-		int8_t readInt8();
-		uint8_t readUInt8();
-
-		int16_t readInt16();
-		uint16_t readUInt16();
-
-		int32_t readInt32();
-		uint32_t readUInt32();
-
-		float readFloat();
-
-		int8_t peekInt8(size_t);
-		uint8_t peekUInt8(size_t);
-
-		int16_t peekInt16(size_t);
-		uint16_t peekUInt16(size_t);
-
-		int32_t peekInt32(size_t);
-		uint32_t peekUInt32(size_t);
-
-		void writeInt8(int8_t);
-		void writeUInt8(uint8_t);
-
-		void writeInt16(int16_t);
-		void writeUInt16(uint16_t);
-
-		void writeInt32(int32_t);
-		void writeUInt32(uint32_t);
-
-		void writeFloat(float);
-		void writeBytes(char*, size_t);
-		void writeString(std::string);
-
-		std::string readString(size_t);
-		std::string peekString(size_t, size_t);
-		void readBytesTo(uint8_t*, size_t);
-
-		bool seek(size_t, bool = false);
-		void skip(size_t);
-		size_t tell();
-
-		uint8_t* getBuffer();
-
-		CDynamicMemoryStream(std::vector<uint8_t>, Endianess, OpenMode);
-		CDynamicMemoryStream(Endianess, OpenMode);
-		CDynamicMemoryStream(){}
-		~CDynamicMemoryStream(){
-			if (mHasInternalBuffer){
-				mBuffer.clear();
-			}
-		}
-
-};
 }
 
 #if defined(BSTREAM_IMPLEMENTATION)
 namespace bStream {
 
-	uint32_t swap32(uint32_t r) {
-		return (((r >> 24) & 0xFF) | ((r << 8) & 0xFF0000) | ((r >> 8) & 0xFF00) | ((r << 24) & 0xFF000000));
-	}
+uint32_t swap32(uint32_t r){
+	return ( ((r>>24)&0xFF) | ((r<<8) & 0xFF0000) | ((r>>8)&0xFF00) | ((r<<24)&0xFF000000));
+}
 
-	uint16_t swap16(uint16_t r) {
-		return (((r << 8) & 0xFF00) | ((r >> 8) & 0x00FF));
-	}
+uint16_t swap16(uint16_t r){
+	return ( ((r<<8)&0xFF00) | ((r>>8)&0x00FF) );
+}
 
-	Endianess getSystemEndianess() {
-		union {
-			uint32_t integer;
-			uint8_t bytes[sizeof(uint32_t)];
-		} check;
-		check.integer = 0x01020304U;
-		return (check.bytes[0] == 0x01 ? Endianess::Big : Endianess::Little);
-	}
+Endianess getSystemEndianess(){
+	union {
+		uint32_t integer;
+		uint8_t bytes[sizeof(uint32_t)];
+	} check;
+	check.integer = 0x01020304U;
+	return (check.bytes[0] == 0x01 ? Endianess::Big : Endianess::Little);
+}
 
-	CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod) {
-		base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
-		base.exceptions(std::ifstream::badbit);
-		filePath = path;
-		order = ord;
-		mode = mod;
-		systemOrder = getSystemEndianess();
-	}
+CFileStream::CFileStream(std::string path, Endianess ord, OpenMode mod){
+	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
+	base.exceptions(std::ifstream::badbit);
+	filePath = path;
+	order = ord;
+	mode = mod;
+	systemOrder = getSystemEndianess();
+}
 
-	CFileStream::CFileStream(std::string path, OpenMode mod) {
-		base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
-		base.exceptions(std::ifstream::badbit);
-		filePath = path;
-		mode = mod;
-		systemOrder = getSystemEndianess();
-		order = getSystemEndianess();
-	}
+CFileStream::CFileStream(std::string path, OpenMode mod){
+	base.open(path, (mod == OpenMode::In ? std::ios::in : std::ios::out) | std::ios::binary);
+	base.exceptions(std::ifstream::badbit);
+	filePath = path;
+	mode = mod;
+	systemOrder = getSystemEndianess();
+	order = getSystemEndianess();
+}
 
-	std::fstream& CFileStream::getStream() {
-		return base;
-	}
+std::fstream &CFileStream::getStream(){
+	return base;
+}
 
-	std::string CFileStream::getPath() {
-		return filePath;
-	}
+std::string CFileStream::getPath(){
+	return filePath;
+}
 
-	bool CFileStream::seek(size_t pos, bool fromCurrent) {
-		try {
-			base.seekg(pos, (fromCurrent ? base.cur : base.beg));
-			return true;
-		}
-		catch (const std::ifstream::failure& f) {
-			return false;
-		}
+bool CFileStream::seek(size_t pos, bool fromCurrent){
+	try {
+		base.seekg(pos, (fromCurrent ? base.cur : base.beg));
+		return true;
+	} catch (const std::ifstream::failure& f) {
+		return false;
 	}
+}
 
-	void CFileStream::skip(size_t amount) {
-		base.seekg(amount, base.cur);
+void CFileStream::skip(size_t amount){
+	base.seekg(amount, base.cur);
+}
+
+size_t CFileStream::tell(){
+	return base.tellg();
+}
+
+uint32_t CFileStream::readUInt32(){
+	assert(mode == OpenMode::In);
+	uint32_t r;
+	base.read((char*)&r, sizeof(uint32_t));
+	if(order != systemOrder){
+		return swap32(r);
 	}
-
-	size_t CFileStream::tell() {
-		return base.tellg();
-	}
-
-	uint32_t CFileStream::readUInt32() {
-		assert(mode == OpenMode::In);
-		uint32_t r;
-		base.read((char*)&r, sizeof(uint32_t));
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	int32_t CFileStream::readInt32() {
-		assert(mode == OpenMode::In);
-		int32_t r;
-		base.read((char*)&r, sizeof(int32_t));
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint16_t CFileStream::readUInt16() {
-		assert(mode == OpenMode::In);
-		uint16_t r;
-		base.read((char*)&r, sizeof(uint16_t));
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	int16_t CFileStream::readInt16() {
-		assert(mode == OpenMode::In);
-		int16_t r;
-		base.read((char*)&r, sizeof(int16_t));
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint8_t CFileStream::readUInt8() {
-		assert(mode == OpenMode::In);
-		uint8_t r;
-		base.read((char*)&r, sizeof(uint8_t));
+	else{
 		return r;
 	}
+}
 
-	int8_t CFileStream::readInt8() {
-		assert(mode == OpenMode::In);
-		int8_t r;
-		base.read((char*)&r, sizeof(int8_t));
+int32_t CFileStream::readInt32(){
+	assert(mode == OpenMode::In);
+	int32_t r;
+	base.read((char*)&r, sizeof(int32_t));
+	if(order != systemOrder){
+		return swap32(r);
+	}
+	else{
 		return r;
 	}
+}
 
-	float CFileStream::readFloat() {
-		assert(mode == OpenMode::In);
-		char buff[sizeof(float)];
-		base.read(buff, sizeof(float));
-		if (order != systemOrder) {
-			char temp[sizeof(float)];
-			temp[0] = buff[3];
-			temp[1] = buff[2];
-			temp[2] = buff[1];
-			temp[3] = buff[0];
-			return *((float*)temp);
-		}
+uint16_t CFileStream::readUInt16(){
+	assert(mode == OpenMode::In);
+	uint16_t r;
+	base.read((char*)&r, sizeof(uint16_t));
+	if(order != systemOrder){
+		return swap16(r);
+	}
+	else{
+		return r;
+	}
+}
+
+int16_t CFileStream::readInt16(){
+	assert(mode == OpenMode::In);
+	int16_t r;
+	base.read((char*)&r, sizeof(int16_t));
+	if(order != systemOrder){
+		return swap16(r);
+	}
+	else{
+		return r;
+	}
+}
+
+uint8_t CFileStream::readUInt8(){
+	assert(mode == OpenMode::In);
+	uint8_t r;
+	base.read((char*)&r, sizeof(uint8_t));
+	return r;
+}
+
+int8_t CFileStream::readInt8(){
+	assert(mode == OpenMode::In);
+	int8_t r;
+	base.read((char*)&r, sizeof(int8_t));
+	return r;
+}
+
+float CFileStream::readFloat(){
+	assert(mode == OpenMode::In);
+	char buff[sizeof(float)];
+	base.read(buff, sizeof(float));
+	if(order != systemOrder){
+		char temp[sizeof(float)];
+		temp[0] = buff[3];
+		temp[1] = buff[2];
+		temp[2] = buff[1];
+		temp[3] = buff[0];
+		return *((float*)temp);
+	}
+	return *((float*)buff);
+}
+
+char* CFileStream::readBytes(size_t size){
+	assert(mode == OpenMode::In);
+	char* buffer = new char[size];
+	base.read(buffer, size);
+	return buffer;
+}
+
+void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len){
+	assert(mode == OpenMode::In);
+	base.read((char*)out_buffer, len);
+}
+
+std::string CFileStream::readString(size_t len){
+	assert(mode == OpenMode::In);
+    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
+    base.read(&str[0], len);
+    return str;
+}
+
+std::string CFileStream::peekString(size_t at, size_t len){
+	assert(mode == OpenMode::In);
+    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
+	size_t cur = base.tellg();
+	base.seekg(at, base.beg);
+    base.read(&str[0], len);
+	base.seekg(cur, base.beg);
+    return str;
+}
+
+std::string CFileStream::readWString(size_t len){
+	assert(mode == OpenMode::In);
+    std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
+    base.read(&str[0], len);
+    return str;
+}
+
+void CFileStream::writeInt8(int8_t v){
+	assert(mode == OpenMode::Out);
+	base.write((char*)&v, 1);
+}
+
+void CFileStream::writeUInt8(uint8_t v){
+	assert(mode == OpenMode::Out);
+	base.write((char*)&v, 1);
+}
+
+void CFileStream::writeInt16(int16_t v){
+	assert(mode == OpenMode::Out);
+	if(order != systemOrder){
+		v = swap16(v);
+	}
+	base.write((char*)&v, sizeof(uint16_t));
+}
+
+void CFileStream::writeUInt16(uint16_t v){
+	assert(mode == OpenMode::Out);
+	if(order != systemOrder){
+		v = swap16(v);
+	}
+	base.write((char*)&v, sizeof(uint16_t));
+}
+
+void CFileStream::writeInt32(int32_t v){
+	assert(mode == OpenMode::Out);
+	if(order != systemOrder){
+	   v = swap32(v);
+	}
+	base.write((char*)&v, sizeof(int32_t));
+}
+
+void CFileStream::writeUInt32(uint32_t v){
+	assert(mode == OpenMode::Out);
+	if(order != systemOrder){
+	   v = swap32(v);
+	}
+	base.write((char*)&v, sizeof(uint32_t));
+}
+
+void CFileStream::writeFloat(float v){
+	assert(mode == OpenMode::Out);
+	char* buff = (char*)&v;
+	if(order != systemOrder){
+		char temp[sizeof(float)];
+		temp[0] = buff[3];
+		temp[1] = buff[2];
+		temp[2] = buff[1];
+		temp[3] = buff[0];
+		v = *((float*)temp);
+	}
+	base.write((char*)&v, sizeof(float));
+}
+
+void CFileStream::writeString(std::string v){
+	assert(mode == OpenMode::Out);
+	base.write(v.c_str(), v.size());
+}
+
+void CFileStream::writeBytes(char* v, size_t size){
+	assert(mode == OpenMode::Out);
+	base.write(v, size);
+}
+
+uint8_t CFileStream::peekUInt8(size_t offset){
+	assert(mode == OpenMode::In);
+	uint8_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt8();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+int8_t CFileStream::peekInt8(size_t offset){
+	assert(mode == OpenMode::In);
+	int8_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt8();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+uint16_t CFileStream::peekUInt16(size_t offset){
+	assert(mode == OpenMode::In);
+	uint16_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt16();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+int16_t CFileStream::peekInt16(size_t offset){
+	assert(mode == OpenMode::In);
+	int16_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt16();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+uint32_t CFileStream::peekUInt32(size_t offset){
+	assert(mode == OpenMode::In);
+	uint32_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readUInt32();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+int32_t CFileStream::peekInt32(size_t offset){
+	assert(mode == OpenMode::In);
+	int32_t ret;
+	int pos = (int)base.tellg();
+	base.seekg(offset, base.beg);
+	ret = readInt32();
+	base.seekg(pos, base.beg);
+	return ret;
+}
+
+size_t CFileStream::getSize(){
+	int pos = (int)base.tellg();
+	base.seekg(0, std::ios::end);
+	size_t ret = base.tellg();
+	base.seekg(pos, std::ios::beg);
+	return ret;
+}
+
+///
+///
+///  CMemoryStream
+///
+///
+
+
+CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode mode){
+	mBuffer = ptr;
+	mPosition = 0;
+	mSize = size;
+	mCapacity = size;
+	mHasInternalBuffer = false;
+	mOpenMode = mode; 
+	order = ord;
+	systemOrder = getSystemEndianess();
+}
+
+CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
+	mBuffer = new uint8_t[size];
+	mPosition = 0;
+	mSize = size;
+	mCapacity = size;
+	mHasInternalBuffer = true;
+	mOpenMode = mode;
+	order = ord;
+	systemOrder = getSystemEndianess();
+}
+
+size_t CMemoryStream::getSize(){
+	return mSize;
+}
+
+size_t CMemoryStream::getCapacity(){
+	return mCapacity;
+}
+
+bool CMemoryStream::seek(size_t pos, bool fromCurrent){
+	if(fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false; 
+	
+	if(fromCurrent){
+		mPosition += pos;
+	} else {
+		mPosition = pos;
+	}
+	
+	if(mPosition > mSize) mSize = mPosition;
+	
+	return true;
+}
+
+void CMemoryStream::skip(size_t amount){
+	mPosition += (mPosition + amount < mSize ? amount : 0);
+}
+
+size_t CMemoryStream::tell(){
+	return mPosition;
+}
+
+uint8_t* CMemoryStream::getBuffer(){
+	return mBuffer;
+}
+
+///
+/// Memstream Reading Functions
+///
+
+int8_t CMemoryStream::readInt8(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	int8_t r;
+	memcpy(&r, OffsetPointer<int8_t>(mBuffer, mPosition), sizeof(int8_t));
+	mPosition++;
+	return r;
+}
+
+uint8_t CMemoryStream::readUInt8(){
+	assert(mOpenMode == OpenMode::In);
+	uint8_t r;
+	memcpy(&r, OffsetPointer<uint8_t>(mBuffer, mPosition), sizeof(uint8_t));
+	mPosition++;
+	return r;
+}
+
+int16_t CMemoryStream::readInt16(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	int16_t r;
+	memcpy(&r, OffsetPointer<int16_t>(mBuffer, mPosition), sizeof(int16_t));
+	mPosition += sizeof(int16_t);
+
+	if(order != systemOrder){
+		return swap16(r);
+	}
+	else{
+		return r;
+	}
+}
+
+uint16_t CMemoryStream::readUInt16(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	uint16_t r;
+	memcpy(&r, OffsetPointer<uint16_t>(mBuffer, mPosition), sizeof(uint16_t));
+	mPosition += sizeof(uint16_t);
+
+	if(order != systemOrder){
+		return swap16(r);
+	}
+	else{
+		return r;
+	}
+}
+
+uint32_t CMemoryStream::readUInt32(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	uint32_t r;
+	memcpy(&r, OffsetPointer<uint32_t>(mBuffer, mPosition), sizeof(uint32_t));
+	mPosition += sizeof(uint32_t);
+
+	if(order != systemOrder){
+		return swap32(r);
+	}
+	else{
+		return r;
+	}
+}
+
+int32_t CMemoryStream::readInt32(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	int32_t r;
+	memcpy(&r, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+
+	if(order != systemOrder){
+		return swap32(r);
+	}
+	else{
+		return r;
+	}
+}
+
+
+float CMemoryStream::readFloat(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	
+	char buff[sizeof(float)];
+	memcpy(&buff, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(float));
+	mPosition += sizeof(float);
+	if(order != systemOrder){
+		char temp[sizeof(float)];
+		temp[0] = buff[3];
+		temp[1] = buff[2];
+		temp[2] = buff[1];
+		temp[3] = buff[0];
+		return *((float*)temp);
+	}
+
+	else{
 		return *((float*)buff);
 	}
+}
 
-	char* CFileStream::readBytes(size_t size) {
-		assert(mode == OpenMode::In);
-		char* buffer = new char[size];
-		base.read(buffer, size);
-		return buffer;
+///
+/// Memstream Peek Functions
+///
+
+int8_t CMemoryStream::peekInt8(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	int8_t r;
+	memcpy(&r, OffsetPointer<int8_t>(mBuffer, at), sizeof(int8_t));
+	return r;
+}
+
+uint8_t CMemoryStream::peekUInt8(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	uint8_t r;
+	memcpy(&r, OffsetPointer<uint8_t>(mBuffer, at), sizeof(uint8_t));
+	return r;
+}
+
+int16_t CMemoryStream::peekInt16(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	int16_t r;
+	memcpy(&r, OffsetPointer<int16_t>(mBuffer, at), sizeof(int16_t));
+
+	if(order != systemOrder){
+		return swap16(r);
 	}
-
-	void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len) {
-		assert(mode == OpenMode::In);
-		base.read((char*)out_buffer, len);
+	else{
+		return r;
 	}
+}
 
-	std::string CFileStream::readString(size_t len) {
-		assert(mode == OpenMode::In);
-		std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
-		base.read(&str[0], len);
-		return str;
+uint16_t CMemoryStream::peekUInt16(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	uint16_t r;
+	memcpy(&r, OffsetPointer<uint16_t>(mBuffer, at), sizeof(uint16_t));
+
+	if(order != systemOrder){
+		return swap16(r);
 	}
-
-	std::string CFileStream::peekString(size_t at, size_t len) {
-		assert(mode == OpenMode::In);
-		std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
-		size_t cur = base.tellg();
-		base.seekg(at, base.beg);
-		base.read(&str[0], len);
-		base.seekg(cur, base.beg);
-		return str;
+	else{
+		return r;
 	}
+}
 
-	std::string CFileStream::readWString(size_t len) {
-		assert(mode == OpenMode::In);
-		std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
-		base.read(&str[0], len);
-		return str;
+uint32_t CMemoryStream::peekUInt32(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	uint32_t r;
+	memcpy(&r, OffsetPointer<uint32_t>(mBuffer, at), sizeof(uint32_t));
+
+	if(order != systemOrder){
+		return swap32(r);
 	}
-
-	void CFileStream::writeInt8(int8_t v) {
-		assert(mode == OpenMode::Out);
-		base.write((char*)&v, 1);
+	else{
+		return r;
 	}
+}
 
-	void CFileStream::writeUInt8(uint8_t v) {
-		assert(mode == OpenMode::Out);
-		base.write((char*)&v, 1);
+int32_t CMemoryStream::peekInt32(size_t at){
+	assert(mOpenMode == OpenMode::In && at < mSize);
+	int32_t r;
+	memcpy(&r, OffsetPointer<int32_t>(mBuffer, at), sizeof(int32_t));
+
+	if(order != systemOrder){
+		return swap32(r);
 	}
-
-	void CFileStream::writeInt16(int16_t v) {
-		assert(mode == OpenMode::Out);
-		if (order != systemOrder) {
-			v = swap16(v);
-		}
-		base.write((char*)&v, sizeof(uint16_t));
+	else{
+		return r;
 	}
+}
 
-	void CFileStream::writeUInt16(uint16_t v) {
-		assert(mode == OpenMode::Out);
-		if (order != systemOrder) {
-			v = swap16(v);
-		}
-		base.write((char*)&v, sizeof(uint16_t));
+std::string CMemoryStream::readString(size_t len){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	std::string str(OffsetPointer<char>(mBuffer, mPosition),OffsetPointer<char>(mBuffer, mPosition+len));
+	mPosition += len;
+	return str;
+}
+
+std::string CMemoryStream::peekString(size_t at, size_t len){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	std::string str(OffsetPointer<char>(mBuffer, at), OffsetPointer<char>(mBuffer, at+len));
+	return str;
+}
+
+//I don't like this set up, but for now it works
+void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	if(mPosition + len < mSize){
+		memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
 	}
+}
 
-	void CFileStream::writeInt32(int32_t v) {
-		assert(mode == OpenMode::Out);
-		if (order != systemOrder) {
-			v = swap32(v);
-		}
-		base.write((char*)&v, sizeof(int32_t));
-	}
+///
+/// Memstream Writing Functions
+///
 
-	void CFileStream::writeUInt32(uint32_t v) {
-		assert(mode == OpenMode::Out);
-		if (order != systemOrder) {
-			v = swap32(v);
-		}
-		base.write((char*)&v, sizeof(uint32_t));
-	}
-
-	void CFileStream::writeFloat(float v) {
-		assert(mode == OpenMode::Out);
-		char* buff = (char*)&v;
-		if (order != systemOrder) {
-			char temp[sizeof(float)];
-			temp[0] = buff[3];
-			temp[1] = buff[2];
-			temp[2] = buff[1];
-			temp[3] = buff[0];
-			v = *((float*)temp);
-		}
-		base.write((char*)&v, sizeof(float));
-	}
-
-	void CFileStream::writeString(std::string v) {
-		assert(mode == OpenMode::Out);
-		base.write(v.c_str(), v.size());
-	}
-
-	void CFileStream::writeBytes(char* v, size_t size) {
-		assert(mode == OpenMode::Out);
-		base.write(v, size);
-	}
-
-	uint8_t CFileStream::peekUInt8(size_t offset) {
-		assert(mode == OpenMode::In);
-		uint8_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readUInt8();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	int8_t CFileStream::peekInt8(size_t offset) {
-		assert(mode == OpenMode::In);
-		int8_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readInt8();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	uint16_t CFileStream::peekUInt16(size_t offset) {
-		assert(mode == OpenMode::In);
-		uint16_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readUInt16();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	int16_t CFileStream::peekInt16(size_t offset) {
-		assert(mode == OpenMode::In);
-		int16_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readInt16();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	uint32_t CFileStream::peekUInt32(size_t offset) {
-		assert(mode == OpenMode::In);
-		uint32_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readUInt32();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	int32_t CFileStream::peekInt32(size_t offset) {
-		assert(mode == OpenMode::In);
-		int32_t ret;
-		int pos = (int)base.tellg();
-		base.seekg(offset, base.beg);
-		ret = readInt32();
-		base.seekg(pos, base.beg);
-		return ret;
-	}
-
-	size_t CFileStream::getSize() {
-		int pos = (int)base.tellg();
-		base.seekg(0, std::ios::end);
-		size_t ret = base.tellg();
-		base.seekg(pos, std::ios::beg);
-		return ret;
-	}
-
-	///
-	///
-	///  CMemoryStream
-	///
-	///
-
-
-	CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode mode) {
-		mBuffer = ptr;
-		mPosition = 0;
-		mSize = size;
-		mCapacity = size;
-		mHasInternalBuffer = false;
-		mOpenMode = mode;
-		order = ord;
-		systemOrder = getSystemEndianess();
-	}
-
-	CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode) {
-		mBuffer = new uint8_t[size];
-		mPosition = 0;
-		mSize = size;
-		mCapacity = size;
-		mHasInternalBuffer = true;
-		mOpenMode = mode;
-		order = ord;
-		systemOrder = getSystemEndianess();
-	}
-
-	size_t CMemoryStream::getSize() {
-		return mSize;
-	}
-
-	size_t CMemoryStream::getCapacity() {
-		return mCapacity;
-	}
-
-	bool CMemoryStream::seek(size_t pos, bool fromCurrent) {
-		if (fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false;
-
-		if (fromCurrent) {
-			mPosition += pos;
-		}
-		else {
-			mPosition = pos;
-		}
-
-		if (mPosition > mSize) mSize = mPosition;
-
+//included in writing functions because this is needed when using an internal buffer
+bool CMemoryStream::Reserve(size_t needed){
+	if(mCapacity >= needed){
 		return true;
 	}
-
-	void CMemoryStream::skip(size_t amount) {
-		mPosition += (mPosition + amount < mSize ? amount : 0);
+	if(!mHasInternalBuffer){
+		return false;
 	}
 
-	size_t CMemoryStream::tell() {
-		return mPosition;
-	}
+	mCapacity *= 2;
+	uint8_t* temp = new uint8_t[mCapacity];
+	memcpy(temp, mBuffer, mSize);
+	delete[] mBuffer;
+	mBuffer = temp;
 
-	uint8_t* CMemoryStream::getBuffer() {
-		return mBuffer;
-	}
+	return true;
+}
 
-	///
-	/// Memstream Reading Functions
-	///
+void CMemoryStream::writeInt8(int8_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<int8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
+	mPosition += sizeof(int8_t);
+}
 
-	int8_t CMemoryStream::readInt8() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		int8_t r;
-		memcpy(&r, OffsetPointer<int8_t>(mBuffer, mPosition), sizeof(int8_t));
-		mPosition++;
-		return r;
-	}
+void CMemoryStream::writeUInt8(uint8_t v){
+	Reserve(mPosition + sizeof(v));
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
+	mPosition += sizeof(int8_t);
+}
 
-	uint8_t CMemoryStream::readUInt8() {
-		assert(mOpenMode == OpenMode::In);
-		uint8_t r;
-		memcpy(&r, OffsetPointer<uint8_t>(mBuffer, mPosition), sizeof(uint8_t));
-		mPosition++;
-		return r;
-	}
+void CMemoryStream::writeInt16(int16_t v){
+	Reserve(mPosition + sizeof(v));
 
-	int16_t CMemoryStream::readInt16() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		int16_t r;
-		memcpy(&r, OffsetPointer<int16_t>(mBuffer, mPosition), sizeof(int16_t));
-		mPosition += sizeof(int16_t);
+	if (order != systemOrder)
+		v = swap16(v);
 
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
+	memcpy(OffsetWritePointer<int16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
+	mPosition += sizeof(int16_t);
+}
 
-	uint16_t CMemoryStream::readUInt16() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		uint16_t r;
-		memcpy(&r, OffsetPointer<uint16_t>(mBuffer, mPosition), sizeof(uint16_t));
-		mPosition += sizeof(uint16_t);
+void CMemoryStream::writeUInt16(uint16_t v){
+	Reserve(mPosition + sizeof(v));
 
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
+	if (order != systemOrder)
+		v = swap16(v);
 
-	uint32_t CMemoryStream::readUInt32() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		uint32_t r;
-		memcpy(&r, OffsetPointer<uint32_t>(mBuffer, mPosition), sizeof(uint32_t));
-		mPosition += sizeof(uint32_t);
+	memcpy(OffsetWritePointer<uint16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
+	mPosition += sizeof(int16_t);
+}
 
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
+void CMemoryStream::writeInt32(int32_t v){
+	Reserve(mPosition + sizeof(v));
 
-	int32_t CMemoryStream::readInt32() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		int32_t r;
-		memcpy(&r, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(int32_t));
-		mPosition += sizeof(int32_t);
+	if (order != systemOrder)
+		v = swap32(v);
 
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
+	memcpy(OffsetWritePointer<int32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+}
 
+void CMemoryStream::writeUInt32(uint32_t v){
+	Reserve(mPosition + sizeof(v));
 
-	float CMemoryStream::readFloat() {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	if (order != systemOrder)
+		v = swap32(v);
 
-		char buff[sizeof(float)];
-		memcpy(&buff, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(float));
-		mPosition += sizeof(float);
-		if (order != systemOrder) {
-			char temp[sizeof(float)];
-			temp[0] = buff[3];
-			temp[1] = buff[2];
-			temp[2] = buff[1];
-			temp[3] = buff[0];
-			return *((float*)temp);
-		}
+	memcpy(OffsetWritePointer<uint32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
+	mPosition += sizeof(int32_t);
+}
 
-		else {
-			return *((float*)buff);
-		}
-	}
+void CMemoryStream::writeFloat(float v){
+	Reserve(mPosition + sizeof(v));
 
-	///
-	/// Memstream Peek Functions
-	///
+	if (order != systemOrder)
+		v = swap32(v);
 
-	int8_t CMemoryStream::peekInt8(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		int8_t r;
-		memcpy(&r, OffsetPointer<int8_t>(mBuffer, at), sizeof(int8_t));
-		return r;
-	}
+	memcpy(OffsetWritePointer<float>(mBuffer, mPosition), &v, sizeof(float));
+	mPosition += sizeof(float);
+}
 
-	uint8_t CMemoryStream::peekUInt8(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		uint8_t r;
-		memcpy(&r, OffsetPointer<uint8_t>(mBuffer, at), sizeof(uint8_t));
-		return r;
-	}
 
-	int16_t CMemoryStream::peekInt16(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		int16_t r;
-		memcpy(&r, OffsetPointer<int16_t>(mBuffer, at), sizeof(int16_t));
+//TODO: Clean these up and test them more
 
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
+void CMemoryStream::writeBytes(char* bytes, size_t size){
+	Reserve(mPosition + size);
+	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), bytes, size);
+	mPosition += size;
+}
 
-	uint16_t CMemoryStream::peekUInt16(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		uint16_t r;
-		memcpy(&r, OffsetPointer<uint16_t>(mBuffer, at), sizeof(uint16_t));
+void CMemoryStream::writeString(std::string str){
+	Reserve(mPosition + str.size());
+	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), str.data(), str.size());
+	mPosition += str.size();
+}
 
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint32_t CMemoryStream::peekUInt32(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		uint32_t r;
-		memcpy(&r, OffsetPointer<uint32_t>(mBuffer, at), sizeof(uint32_t));
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	int32_t CMemoryStream::peekInt32(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mSize);
-		int32_t r;
-		memcpy(&r, OffsetPointer<int32_t>(mBuffer, at), sizeof(int32_t));
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	std::string CMemoryStream::readString(size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		std::string str(OffsetPointer<char>(mBuffer, mPosition), OffsetPointer<char>(mBuffer, mPosition + len));
-		mPosition += len;
-		return str;
-	}
-
-	std::string CMemoryStream::peekString(size_t at, size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		std::string str(OffsetPointer<char>(mBuffer, at), OffsetPointer<char>(mBuffer, at + len));
-		return str;
-	}
-
-	//I don't like this set up, but for now it works
-	void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mSize);
-		if (mPosition + len < mSize) {
-			memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
-		}
-	}
-
-	///
-	/// Memstream Writing Functions
-	///
-
-	//included in writing functions because this is needed when using an internal buffer
-	bool CMemoryStream::Reserve(size_t needed) {
-		if (mCapacity >= needed) {
-			return true;
-		}
-		if (!mHasInternalBuffer) {
-			return false;
-		}
-
-		mCapacity *= 2;
-		uint8_t* temp = new uint8_t[mCapacity];
-		memcpy(temp, mBuffer, mSize);
-		delete[] mBuffer;
-		mBuffer = temp;
-
-		return true;
-	}
-
-	void CMemoryStream::writeInt8(int8_t v) {
-		Reserve(mPosition + sizeof(v));
-		memcpy(OffsetWritePointer<int8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
-		mPosition += sizeof(int8_t);
-	}
-
-	void CMemoryStream::writeUInt8(uint8_t v) {
-		Reserve(mPosition + sizeof(v));
-		memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), &v, sizeof(int8_t));
-		mPosition += sizeof(int8_t);
-	}
-
-	void CMemoryStream::writeInt16(int16_t v) {
-		Reserve(mPosition + sizeof(v));
-
-		if (order != systemOrder)
-			v = swap16(v);
-
-		memcpy(OffsetWritePointer<int16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
-		mPosition += sizeof(int16_t);
-	}
-
-	void CMemoryStream::writeUInt16(uint16_t v) {
-		Reserve(mPosition + sizeof(v));
-
-		if (order != systemOrder)
-			v = swap16(v);
-
-		memcpy(OffsetWritePointer<uint16_t>(mBuffer, mPosition), &v, sizeof(int16_t));
-		mPosition += sizeof(int16_t);
-	}
-
-	void CMemoryStream::writeInt32(int32_t v) {
-		Reserve(mPosition + sizeof(v));
-
-		if (order != systemOrder)
-			v = swap32(v);
-
-		memcpy(OffsetWritePointer<int32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
-		mPosition += sizeof(int32_t);
-	}
-
-	void CMemoryStream::writeUInt32(uint32_t v) {
-		Reserve(mPosition + sizeof(v));
-
-		if (order != systemOrder)
-			v = swap32(v);
-
-		memcpy(OffsetWritePointer<uint32_t>(mBuffer, mPosition), &v, sizeof(int32_t));
-		mPosition += sizeof(int32_t);
-	}
-
-	void CMemoryStream::writeFloat(float v) {
-		Reserve(mPosition + sizeof(v));
-
-		if (order != systemOrder)
-			v = swap32(v);
-
-		memcpy(OffsetWritePointer<float>(mBuffer, mPosition), &v, sizeof(float));
-		mPosition += sizeof(float);
-	}
-
-
-	//TODO: Clean these up and test them more
-
-	void CMemoryStream::writeBytes(char* bytes, size_t size) {
-		Reserve(mPosition + size);
-		memcpy(OffsetWritePointer<char>(mBuffer, mPosition), bytes, size);
-		mPosition += size;
-	}
-
-	void CMemoryStream::writeString(std::string str) {
-		Reserve(mPosition + str.size());
-		memcpy(OffsetWritePointer<char>(mBuffer, mPosition), str.data(), str.size());
-		mPosition += str.size();
-	}
-
-	///
-	///
-	///  CDynamicMemoryStream
-	///
-	///
-
-	CDynamicMemoryStream::CDynamicMemoryStream(std::vector<uint8_t> vec, Endianess ord, OpenMode mode) {
-		mBuffer = vec;
-		mPosition = 0;
-		mHasInternalBuffer = false;
-
-		mOpenMode = mode;
-		order = ord;
-		systemOrder = getSystemEndianess();
-	}
-
-	CDynamicMemoryStream::CDynamicMemoryStream(Endianess ord, OpenMode mode) {
-		mBuffer = std::vector<uint8_t>();
-		mPosition = 0;
-		mHasInternalBuffer = true;
-
-		mOpenMode = mode;
-		order = ord;
-		systemOrder = getSystemEndianess();
-	}
-
-	size_t CDynamicMemoryStream::getSize() {
-		return mBuffer.size();
-	}
-
-	size_t CDynamicMemoryStream::getCapacity() {
-		return mBuffer.capacity();
-	}
-
-	bool CDynamicMemoryStream::seek(size_t pos, bool fromCurrent) {
-		//if (fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false;
-
-		if (fromCurrent) {
-			mPosition += pos;
-		}
-		else {
-			mPosition = pos;
-		}
-
-		if (mPosition > mBuffer.size()) {
-			while (mPosition > mBuffer.size())
-				mBuffer.push_back(0);
-		}
-
-		return true;
-	}
-
-	void CDynamicMemoryStream::skip(size_t amount) {
-		mPosition += (mPosition + amount < mBuffer.size() ? amount : 0);
-	}
-
-	size_t CDynamicMemoryStream::tell() {
-		return mPosition;
-	}
-
-	uint8_t* CDynamicMemoryStream::getBuffer() {
-		return mBuffer.data();
-	}
-
-	///
-	/// Dynamic Memstream Reading Functions
-	///
-
-	int8_t CDynamicMemoryStream::readInt8() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		return mBuffer[mPosition++];
-	}
-
-	uint8_t CDynamicMemoryStream::readUInt8() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		return mBuffer[mPosition++];
-	}
-
-	int16_t CDynamicMemoryStream::readInt16() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size() && mPosition + sizeof(int16_t) <= mBuffer.size());
-		int16_t r;
-		memcpy(&r, mBuffer.data() + mPosition, sizeof(int16_t));
-		mPosition += sizeof(int16_t);
-
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint16_t CDynamicMemoryStream::readUInt16() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size() && mPosition + sizeof(uint16_t) <= mBuffer.size());
-		uint16_t r;
-		memcpy(&r, mBuffer.data() + mPosition, sizeof(uint16_t));
-		mPosition += sizeof(uint16_t);
-
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	int32_t CDynamicMemoryStream::readInt32() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size() && mPosition + sizeof(int32_t) <= mBuffer.size());
-		int32_t r;
-		memcpy(&r, mBuffer.data() + mPosition, sizeof(uint32_t));
-		mPosition += sizeof(int32_t);
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint32_t CDynamicMemoryStream::readUInt32() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size() && mPosition + sizeof(uint32_t) <= mBuffer.size());
-		uint32_t r;
-		memcpy(&r, mBuffer.data() + mPosition, sizeof(uint32_t));
-		mPosition += sizeof(uint32_t);
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	float CDynamicMemoryStream::readFloat() {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size() && mPosition + sizeof(float) <= mBuffer.size());
-
-		char buff[sizeof(float)];
-		memcpy(&buff, mBuffer.data() + mPosition, sizeof(float));
-		mPosition += sizeof(float);
-		if (order != systemOrder) {
-			char temp[sizeof(float)];
-			temp[0] = buff[3];
-			temp[1] = buff[2];
-			temp[2] = buff[1];
-			temp[3] = buff[0];
-			return *((float*)temp);
-		}
-
-		else {
-			return *((float*)buff);
-		}
-	}
-
-	///
-	/// Dynamic Memstream Peek Functions
-	///
-
-	int8_t CDynamicMemoryStream::peekInt8(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mBuffer.size());
-		return mBuffer[at];
-	}
-
-	uint8_t CDynamicMemoryStream::peekUInt8(size_t at) {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		return mBuffer[at];
-	}
-
-	int16_t CDynamicMemoryStream::peekInt16(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mBuffer.size() && at + sizeof(int16_t) <= mBuffer.size());
-		int16_t r;
-		memcpy(&r, mBuffer.data() + at, sizeof(int16_t));
-
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint16_t CDynamicMemoryStream::peekUInt16(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mBuffer.size() && at + sizeof(uint16_t) <= mBuffer.size());
-		uint16_t r;
-		memcpy(&r, mBuffer.data() + at, sizeof(uint16_t));
-
-		if (order != systemOrder) {
-			return swap16(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	int32_t CDynamicMemoryStream::peekInt32(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mBuffer.size() && at + sizeof(int32_t) <= mBuffer.size());
-		int32_t r;
-		memcpy(&r, mBuffer.data() + at, sizeof(uint32_t));
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	uint32_t CDynamicMemoryStream::peekUInt32(size_t at) {
-		assert(mOpenMode == OpenMode::In && at < mBuffer.size() && at + sizeof(uint32_t) <= mBuffer.size());
-		uint32_t r;
-		memcpy(&r, mBuffer.data() + at, sizeof(uint32_t));
-
-		if (order != systemOrder) {
-			return swap32(r);
-		}
-		else {
-			return r;
-		}
-	}
-
-	std::string CDynamicMemoryStream::readString(size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		std::string str((char*)(mBuffer.data() + mPosition), (char*)(mBuffer.data() + mPosition + len));
-		mPosition += len;
-		return str;
-	}
-
-	std::string CDynamicMemoryStream::peekString(size_t at, size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		std::string str((char*)(mBuffer.data() + at), (char*)(mBuffer.data() + at + len));
-		return str;
-	}
-
-	//I don't like this set up, but for now it works
-	void CDynamicMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len) {
-		assert(mOpenMode == OpenMode::In && mPosition < mBuffer.size());
-		if (mPosition + len < mBuffer.size()) {
-			memcpy(out_buffer, mBuffer.data() + mPosition, len);
-		}
-	}
-
-	///
-	/// Dynamic Memstream Writing Functions
-	///
-
-	void CDynamicMemoryStream::writeInt8(int8_t v) {
-		mBuffer.push_back(v);
-
-		mPosition += sizeof(int8_t);
-	}
-
-	void CDynamicMemoryStream::writeUInt8(uint8_t v) {
-		mBuffer.push_back(v);
-
-		mPosition += sizeof(uint8_t);
-	}
-
-	void CDynamicMemoryStream::writeInt16(int16_t v) {
-		if (order != systemOrder)
-			v = swap16(v);
-
-		mBuffer.push_back(v >> 8);
-		mBuffer.push_back(v & 0x00FF);
-
-		mPosition += sizeof(int16_t);
-	}
-
-	void CDynamicMemoryStream::writeUInt16(uint16_t v) {
-		if (order != systemOrder)
-			v = swap16(v);
-
-		mBuffer.push_back(v >> 8);
-		mBuffer.push_back(v & 0x00FF);
-
-		mPosition += sizeof(uint16_t);
-	}
-
-	void CDynamicMemoryStream::writeInt32(int32_t v) {
-		if (order != systemOrder)
-			v = swap32(v);
-
-		mBuffer.push_back(v >> 24);
-		mBuffer.push_back(v >> 16);
-		mBuffer.push_back(v >> 8);
-		mBuffer.push_back(v & 0x000000FF);
-
-		mPosition += sizeof(int32_t);
-	}
-
-	void CDynamicMemoryStream::writeUInt32(uint32_t v) {
-		if (order != systemOrder)
-			v = swap32(v);
-
-		mBuffer.push_back(v >> 24);
-		mBuffer.push_back(v >> 16);
-		mBuffer.push_back(v >> 8);
-		mBuffer.push_back(v & 0x000000FF);
-
-		mPosition += sizeof(uint32_t);
-	}
-
-	void CDynamicMemoryStream::writeFloat(float v) {
-		//if (order != systemOrder)
-			//v = swap32(v);
-
-		//mBuffer.push_back(v >> 24);
-		//mBuffer.push_back(v >> 16);
-		//mBuffer.push_back(v >> 8);
-		//mBuffer.push_back(v & 0x000000FF);
-		//mPosition += sizeof(float);
-	}
-
-	void CDynamicMemoryStream::writeBytes(char* bytes, size_t size) {
-		for (size_t i = 0; i < size; i++)
-			mBuffer.push_back(bytes[i]);
-
-		mPosition += size;
-	}
-
-	void CDynamicMemoryStream::writeString(std::string str) {
-		for (char c : str)
-			mBuffer.push_back(c);
-
-		mPosition += str.size();
-	}
 }
 #endif
