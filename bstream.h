@@ -156,10 +156,9 @@ class CMemoryStream : public CStream {
 		OpenMode mOpenMode;
 		Endianess order;
 		Endianess systemOrder;
-
-		bool Reserve(size_t);
 	
 	public:
+		bool Reserve(size_t);
 
 		size_t getSize();
 		size_t getCapacity();
@@ -548,7 +547,7 @@ CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode 
 }
 
 CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
-	mBuffer = new uint8_t[size];
+	mBuffer = new uint8_t[size]{};
 	mPosition = 0;
 	mSize = size;
 	mCapacity = size;
@@ -794,11 +793,12 @@ bool CMemoryStream::Reserve(size_t needed){
 	}
 
 	mCapacity *= 2;
-	uint8_t* temp = new uint8_t[mCapacity];
+	uint8_t* temp = new uint8_t[mCapacity]{};
 	memcpy(temp, mBuffer, mSize);
 	delete[] mBuffer;
 	mBuffer = temp;
 
+	mSize += needed;
 	return true;
 }
 
