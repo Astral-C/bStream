@@ -776,6 +776,8 @@ void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	if(mPosition + len < mSize){
 		memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
+
+		mPosition += len;
 	}
 }
 
