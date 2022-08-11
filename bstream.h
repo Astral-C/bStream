@@ -859,8 +859,15 @@ void CMemoryStream::writeUInt32(uint32_t v){
 void CMemoryStream::writeFloat(float v){
 	Reserve(mPosition + sizeof(v));
 
-	if (order != systemOrder)
-		v = swap32(v);
+	char* buff = (char*)&v;
+	if(order != systemOrder){
+		char temp[sizeof(float)];
+		temp[0] = buff[3];
+		temp[1] = buff[2];
+		temp[2] = buff[1];
+		temp[3] = buff[0];
+		v = *((float*)temp);
+	}
 
 	memcpy(OffsetWritePointer<float>(mBuffer, mPosition), &v, sizeof(float));
 	mPosition += sizeof(float);
