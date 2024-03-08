@@ -168,6 +168,7 @@ class CMemoryStream : public CStream {
 	
 	public:
 		bool Reserve(size_t);
+		bool setSize(size_t);
 
 		size_t getSize();
 		size_t getCapacity();
@@ -618,7 +619,7 @@ size_t CMemoryStream::getCapacity(){
 
 // Allow for changing from read to write mode ONLY if we have an internal buffer.
 bool CMemoryStream::changeMode(OpenMode mode){
-	if(mHasInternalBuffer == false){
+	if(!mHasInternalBuffer){
 		return false;
 	}
 
@@ -867,6 +868,24 @@ void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
 /// Memstream Writing Functions
 ///
 
+bool CMemoryStream::setSize(size_t size) {
+	if(mCapacity >= size){
+		mSize = size;
+		return true;
+	}
+	if(!mHasInternalBuffer){
+		return false;
+	}
+
+	mCapacity = size;
+	uint8_t* temp = new uint8_t[mCapacity]{};
+	memcpy(temp, mBuffer, mSize);
+	delete[] mBuffer;
+	mBuffer = temp;
+
+	return true;
+}
+
 //included in writing functions because this is needed when using an internal buffer
 bool CMemoryStream::Reserve(size_t needed){
 	if(mCapacity >= needed){
@@ -876,7 +895,12 @@ bool CMemoryStream::Reserve(size_t needed){
 		return false;
 	}
 
-	mCapacity *= 2;
+	if(mCapacity * 2 > needed){
+		mCapacity *= 2;
+	} else {
+		mCapacity += needed;
+	}
+
 	uint8_t* temp = new uint8_t[mCapacity]{};
 	memcpy(temp, mBuffer, mSize);
 	delete[] mBuffer;
