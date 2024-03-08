@@ -730,7 +730,7 @@ int32_t CMemoryStream::readInt32(){
 }
 
 
-double CMemoryStream::readFloat(){
+float CMemoryStream::readFloat(){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	
 	char buff[sizeof(float)];
