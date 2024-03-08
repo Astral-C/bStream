@@ -54,6 +54,9 @@ class CStream {
 		virtual float readFloat() = 0;
 		virtual void writeFloat(float) = 0;
 
+		virtual double readDouble() = 0;
+		virtual void writeDouble(double) = 0;
+
 		virtual int8_t peekInt8(size_t) = 0;
 		virtual uint8_t peekUInt8(size_t) = 0;
 
@@ -107,6 +110,7 @@ public:
 	int32_t readInt32();
 	uint32_t readUInt32();
 	float readFloat();
+	double readDouble();
 	char* readBytes(size_t);
 	std::string readWString(size_t);
 	std::string readString(size_t);
@@ -120,6 +124,7 @@ public:
 	void writeInt32(int32_t);
 	void writeUInt32(uint32_t);
 	void writeFloat(float);
+	void writeDouble(double);
 	void writeBytes(uint8_t*, size_t);
 	void writeString(std::string);
 
@@ -177,6 +182,7 @@ class CMemoryStream : public CStream {
 		uint32_t readUInt32();
 
 		float readFloat();
+		double readDouble();
 
 		int8_t peekInt8(size_t);
 		uint8_t peekUInt8(size_t);
@@ -196,6 +202,7 @@ class CMemoryStream : public CStream {
 		void writeInt32(int32_t);
 		void writeUInt32(uint32_t);
 
+		void writeDouble(double);
 		void writeFloat(float);
 		void writeBytes(uint8_t*, size_t);
 		void writeString(std::string);
@@ -209,6 +216,8 @@ class CMemoryStream : public CStream {
 		size_t tell();
 
 		uint8_t* getBuffer();
+
+		bool changeMode(OpenMode mode);
 
 		CMemoryStream(uint8_t*, size_t, Endianess, OpenMode);
 		CMemoryStream(size_t, Endianess, OpenMode);
@@ -362,6 +371,25 @@ float CFileStream::readFloat(){
 	return *((float*)buff);
 }
 
+float CFileStream::readDouble(){
+	assert(mode == OpenMode::In);
+	char buff[sizeof(double)];
+	base.read(buff, sizeof(double));
+	if(order != systemOrder){
+		char temp[sizeof(double)];
+		temp[0] = buff[7];
+		temp[1] = buff[6];
+		temp[2] = buff[5];
+		temp[3] = buff[4];
+		temp[4] = buff[3];
+		temp[5] = buff[2];
+		temp[6] = buff[1];
+		temp[7] = buff[0];
+		return *((double*)temp);
+	}
+	return *((double*)buff);
+}
+
 char* CFileStream::readBytes(size_t size){
 	assert(mode == OpenMode::In);
 	char* buffer = new char[size];
@@ -453,6 +481,25 @@ void CFileStream::writeFloat(float v){
 	}
 	base.write((char*)&v, sizeof(float));
 }
+
+void CFileStream::writeDouble(double v){
+	assert(mode == OpenMode::Out);
+	char* buff = (char*)&v;
+	if(order != systemOrder){
+		char temp[sizeof(double)];
+		temp[0] = buff[7];
+		temp[1] = buff[6];
+		temp[2] = buff[5];
+		temp[3] = buff[4];
+		temp[4] = buff[3];
+		temp[5] = buff[2];
+		temp[6] = buff[1];
+		temp[7] = buff[0];
+		v = *((double*)temp);
+	}
+	base.write((char*)&v, sizeof(double));
+}
+
 
 void CFileStream::writeString(std::string v){
 	assert(mode == OpenMode::Out);
@@ -567,6 +614,17 @@ size_t CMemoryStream::getSize(){
 
 size_t CMemoryStream::getCapacity(){
 	return mCapacity;
+}
+
+// Allow for changing from read to write mode ONLY if we have an internal buffer.
+bool CMemoryStream::changeMode(OpenMode mode){
+	if(mHasInternalBuffer == false){
+		return false;
+	}
+
+	mOpenMode = mode;
+
+	return true;
 }
 
 bool CMemoryStream::seek(size_t pos, bool fromCurrent){
@@ -689,6 +747,26 @@ float CMemoryStream::readFloat(){
 
 	else{
 		return *((float*)buff);
+	}
+}
+
+double CMemoryStream::readDouble(){
+	assert(mOpenMode == OpenMode::In && mPosition < mSize);
+	
+	char buff[sizeof(double)];
+	memcpy(&buff, OffsetPointer<double>(mBuffer, mPosition), sizeof(float));
+	mPosition += sizeof(double);
+	if(order != systemOrder){
+		char temp[sizeof(double)];
+		temp[0] = buff[3];
+		temp[1] = buff[2];
+		temp[2] = buff[1];
+		temp[3] = buff[0];
+		return *((double*)temp);
+	}
+
+	else{
+		return *((double*)buff);
 	}
 }
 
@@ -877,6 +955,27 @@ void CMemoryStream::writeFloat(float v){
 	mPosition += sizeof(float);
 }
 
+
+void CMemoryStream::writeDouble(double v){
+	Reserve(mPosition + sizeof(v));
+
+	char* buff = (char*)&v;
+	if(order != systemOrder){
+		char temp[sizeof(float)];
+		temp[0] = buff[7];
+		temp[1] = buff[6];
+		temp[2] = buff[5];
+		temp[3] = buff[4];
+		temp[4] = buff[3];
+		temp[5] = buff[2];
+		temp[6] = buff[1];
+		temp[7] = buff[0];
+		v = *((double*)temp);
+	}
+
+	memcpy(OffsetWritePointer<double>(mBuffer, mPosition), &v, sizeof(double));
+	mPosition += sizeof(double);
+}
 
 //TODO: Clean these up and test them more
 
