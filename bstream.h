@@ -40,6 +40,8 @@ class CStream {
 		virtual bool seek(size_t, bool = false) = 0;
 		virtual void skip(size_t) = 0;
 		virtual size_t tell() = 0;
+		
+		virtual size_t getSize() = 0;
 
 		virtual uint8_t readUInt8() = 0;
 		virtual uint16_t readUInt16() = 0;
@@ -71,6 +73,8 @@ class CStream {
 		virtual void writeUInt16(uint16_t) = 0;
 
 		virtual void readBytesTo(uint8_t*, size_t) = 0;
+		virtual void writeBytes(uint8_t*, size_t) = 0;
+		
 
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(size_t, size_t) = 0;
@@ -116,7 +120,7 @@ public:
 	void writeInt32(int32_t);
 	void writeUInt32(uint32_t);
 	void writeFloat(float);
-	void writeBytes(char*, size_t);
+	void writeBytes(uint8_t*, size_t);
 	void writeString(std::string);
 
 	//utility functions
@@ -193,7 +197,7 @@ class CMemoryStream : public CStream {
 		void writeUInt32(uint32_t);
 
 		void writeFloat(float);
-		void writeBytes(char*, size_t);
+		void writeBytes(uint8_t*, size_t);
 		void writeString(std::string);
 
 		std::string readString(size_t);
@@ -455,9 +459,9 @@ void CFileStream::writeString(std::string v){
 	base.write(v.c_str(), v.size());
 }
 
-void CFileStream::writeBytes(char* v, size_t size){
+void CFileStream::writeBytes(uint8_t* v, size_t size){
 	assert(mode == OpenMode::Out);
-	base.write(v, size);
+	base.write((char*)v, size);
 }
 
 uint8_t CFileStream::peekUInt8(size_t offset){
@@ -876,15 +880,15 @@ void CMemoryStream::writeFloat(float v){
 
 //TODO: Clean these up and test them more
 
-void CMemoryStream::writeBytes(char* bytes, size_t size){
+void CMemoryStream::writeBytes(uint8_t* bytes, size_t size){
 	Reserve(mPosition + size);
-	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), bytes, size);
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), bytes, size);
 	mPosition += size;
 }
 
 void CMemoryStream::writeString(std::string str){
 	Reserve(mPosition + str.size());
-	memcpy(OffsetWritePointer<char>(mBuffer, mPosition), str.data(), str.size());
+	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), str.data(), str.size());
 	mPosition += str.size();
 }
 
