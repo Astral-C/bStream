@@ -371,7 +371,7 @@ float CFileStream::readFloat(){
 	return *((float*)buff);
 }
 
-float CFileStream::readDouble(){
+double CFileStream::readDouble(){
 	assert(mode == OpenMode::In);
 	char buff[sizeof(double)];
 	base.read(buff, sizeof(double));
@@ -730,7 +730,7 @@ int32_t CMemoryStream::readInt32(){
 }
 
 
-float CMemoryStream::readFloat(){
+double CMemoryStream::readFloat(){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	
 	char buff[sizeof(float)];
