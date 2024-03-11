@@ -1,4 +1,7 @@
 #pragma once
+#ifndef __BSTREAM_H__
+#define __BSTREAM_H__
+
 #include <iostream>
 #include <cstdint>
 #include <fstream>
@@ -1016,4 +1019,6 @@ void CMemoryStream::writeString(std::string str){
 }
 
 }
+#endif
+
 #endif
