@@ -860,7 +860,7 @@ std::string CMemoryStream::peekString(size_t at, size_t len){
 //I don't like this set up, but for now it works
 void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
-	if(mPosition + len < mSize){
+	if(mPosition + len <= mSize){
 		memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
 
 		mPosition += len;
