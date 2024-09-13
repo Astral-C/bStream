@@ -885,6 +885,7 @@ bool CMemoryStream::setSize(size_t size) {
 	memcpy(temp, mBuffer, mSize);
 	delete[] mBuffer;
 	mBuffer = temp;
+	mSize = size;
 
 	return true;
 }
