@@ -14,14 +14,14 @@ uint32_t swap32(uint32_t v);
 uint16_t swap16(uint16_t v);
 
 template < typename T >
-static inline const T * OffsetPointer(const void * ptr, size_t offs) {
+static inline const T * OffsetPointer(const void * ptr, std::size_t offs) {
   uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
   p += offs;
   return reinterpret_cast<const T *>(p);
 }
 
 template < typename T >
-static inline T * OffsetWritePointer(void * ptr, size_t offs) {
+static inline T * OffsetWritePointer(void * ptr, std::size_t offs) {
   uintptr_t p = reinterpret_cast<uintptr_t>(ptr);
   p += offs;
   return reinterpret_cast<T *>(p);
@@ -40,11 +40,11 @@ Endianess getSystemEndianess();
 
 class CStream {
 	public:
-		virtual bool seek(size_t, bool = false) = 0;
-		virtual void skip(size_t) = 0;
-		virtual size_t tell() = 0;
+		virtual bool seek(std::size_t, bool = false) = 0;
+		virtual void skip(std::size_t) = 0;
+		virtual std::size_t tell() = 0;
 		
-		virtual size_t getSize() = 0;
+		virtual std::size_t getSize() = 0;
 
 		virtual uint8_t readUInt8() = 0;
 		virtual uint16_t readUInt16() = 0;
@@ -60,14 +60,14 @@ class CStream {
 		virtual double readDouble() = 0;
 		virtual void writeDouble(double) = 0;
 
-		virtual int8_t peekInt8(size_t) = 0;
-		virtual uint8_t peekUInt8(size_t) = 0;
+		virtual int8_t peekInt8(std::size_t) = 0;
+		virtual uint8_t peekUInt8(std::size_t) = 0;
 
-		virtual int16_t peekInt16(size_t) = 0;
-		virtual uint16_t peekUInt16(size_t) = 0;
+		virtual int16_t peekInt16(std::size_t) = 0;
+		virtual uint16_t peekUInt16(std::size_t) = 0;
 
-		virtual int32_t peekInt32(size_t) = 0;
-		virtual uint32_t peekUInt32(size_t) = 0;
+		virtual int32_t peekInt32(std::size_t) = 0;
+		virtual uint32_t peekUInt32(std::size_t) = 0;
 
 		virtual void writeInt8(int8_t) = 0;
 		virtual void writeUInt8(uint8_t) = 0;
@@ -78,13 +78,13 @@ class CStream {
 		virtual void writeInt16(int16_t) = 0;
 		virtual void writeUInt16(uint16_t) = 0;
 
-		virtual void readBytesTo(uint8_t*, size_t) = 0;
-		virtual void writeBytes(uint8_t*, size_t) = 0;
+		virtual void readBytesTo(uint8_t*, std::size_t) = 0;
+		virtual void writeBytes(uint8_t*, std::size_t) = 0;
 		
 
 		virtual void writeString(std::string) = 0;
-		virtual std::string peekString(size_t, size_t) = 0;
-		virtual std::string readString(size_t) = 0;
+		virtual std::string peekString(std::size_t, std::size_t) = 0;
+		virtual std::string readString(std::size_t) = 0;
 };
 
 class CFileStream : public CStream {
@@ -114,10 +114,10 @@ public:
 	uint32_t readUInt32();
 	float readFloat();
 	double readDouble();
-	char* readBytes(size_t);
-	std::string readWString(size_t);
-	std::string readString(size_t);
-	void readBytesTo(uint8_t*, size_t);
+	char* readBytes(std::size_t);
+	std::string readWString(std::size_t);
+	std::string readString(std::size_t);
+	void readBytesTo(uint8_t*, std::size_t);
 
 	//write functions
 	void writeInt8(int8_t);
@@ -128,26 +128,26 @@ public:
 	void writeUInt32(uint32_t);
 	void writeFloat(float);
 	void writeDouble(double);
-	void writeBytes(uint8_t*, size_t);
+	void writeBytes(uint8_t*, std::size_t);
 	void writeString(std::string);
 
 	//utility functions
-	size_t getSize();
-	size_t tell();
-	bool seek(size_t, bool = false);
-	void skip(size_t);
+	std::size_t getSize();
+	std::size_t tell();
+	bool seek(std::size_t, bool = false);
+	void skip(std::size_t);
 	std::string getPath();
 
-	int8_t peekInt8(size_t);
-	uint8_t peekUInt8(size_t);
+	int8_t peekInt8(std::size_t);
+	uint8_t peekUInt8(std::size_t);
 
-	int16_t peekInt16(size_t);
-	uint16_t peekUInt16(size_t);
+	int16_t peekInt16(std::size_t);
+	uint16_t peekUInt16(std::size_t);
 	
-	int32_t peekInt32(size_t);
-	uint32_t peekUInt32(size_t);
+	int32_t peekInt32(std::size_t);
+	uint32_t peekUInt32(std::size_t);
 
-	std::string peekString(size_t, size_t);
+	std::string peekString(std::size_t, std::size_t);
 
 	std::fstream &getStream();
 
@@ -160,9 +160,9 @@ public:
 class CMemoryStream : public CStream {
 	private:
 		uint8_t* mBuffer;
-		size_t mPosition;
-		size_t mSize;
-		size_t mCapacity;
+		std::size_t mPosition;
+		std::size_t mSize;
+		std::size_t mCapacity;
 		int8_t mHasInternalBuffer;
 
 		OpenMode mOpenMode;
@@ -170,11 +170,11 @@ class CMemoryStream : public CStream {
 		Endianess systemOrder;
 	
 	public:
-		bool Reserve(size_t);
-		bool setSize(size_t);
+		bool Reserve(std::size_t);
+		bool setSize(std::size_t);
 
-		size_t getSize();
-		size_t getCapacity();
+		std::size_t getSize();
+		std::size_t getCapacity();
 		
 		int8_t readInt8();
 		uint8_t readUInt8();
@@ -188,14 +188,14 @@ class CMemoryStream : public CStream {
 		float readFloat();
 		double readDouble();
 
-		int8_t peekInt8(size_t);
-		uint8_t peekUInt8(size_t);
+		int8_t peekInt8(std::size_t);
+		uint8_t peekUInt8(std::size_t);
 
-		int16_t peekInt16(size_t);
-		uint16_t peekUInt16(size_t);
+		int16_t peekInt16(std::size_t);
+		uint16_t peekUInt16(std::size_t);
 
-		int32_t peekInt32(size_t);
-		uint32_t peekUInt32(size_t);
+		int32_t peekInt32(std::size_t);
+		uint32_t peekUInt32(std::size_t);
 
 		void writeInt8(int8_t);
 		void writeUInt8(uint8_t);
@@ -208,23 +208,23 @@ class CMemoryStream : public CStream {
 
 		void writeDouble(double);
 		void writeFloat(float);
-		void writeBytes(uint8_t*, size_t);
+		void writeBytes(uint8_t*, std::size_t);
 		void writeString(std::string);
 
-		std::string readString(size_t);
-		std::string peekString(size_t, size_t);
-		void readBytesTo(uint8_t*, size_t);
+		std::string readString(std::size_t);
+		std::string peekString(std::size_t, std::size_t);
+		void readBytesTo(uint8_t*, std::size_t);
 
-		bool seek(size_t, bool = false);
-		void skip(size_t);
-		size_t tell();
+		bool seek(std::size_t, bool = false);
+		void skip(std::size_t);
+		std::size_t tell();
 
 		uint8_t* getBuffer();
 
 		bool changeMode(OpenMode mode);
 
-		CMemoryStream(uint8_t*, size_t, Endianess, OpenMode);
-		CMemoryStream(size_t, Endianess, OpenMode);
+		CMemoryStream(uint8_t*, std::size_t, Endianess, OpenMode);
+		CMemoryStream(std::size_t, Endianess, OpenMode);
 		CMemoryStream(){}
 		~CMemoryStream(){
 			if(mHasInternalBuffer){
@@ -281,7 +281,7 @@ std::string CFileStream::getPath(){
 	return filePath;
 }
 
-bool CFileStream::seek(size_t pos, bool fromCurrent){
+bool CFileStream::seek(std::size_t pos, bool fromCurrent){
 	try {
 		base.seekg(pos, (fromCurrent ? base.cur : base.beg));
 		return true;
@@ -290,11 +290,11 @@ bool CFileStream::seek(size_t pos, bool fromCurrent){
 	}
 }
 
-void CFileStream::skip(size_t amount){
+void CFileStream::skip(std::size_t amount){
 	base.seekg(amount, base.cur);
 }
 
-size_t CFileStream::tell(){
+std::size_t CFileStream::tell(){
 	return base.tellg();
 }
 
@@ -394,36 +394,36 @@ double CFileStream::readDouble(){
 	return *((double*)buff);
 }
 
-char* CFileStream::readBytes(size_t size){
+char* CFileStream::readBytes(std::size_t size){
 	assert(mode == OpenMode::In);
 	char* buffer = new char[size];
 	base.read(buffer, size);
 	return buffer;
 }
 
-void CFileStream::readBytesTo(uint8_t* out_buffer, size_t len){
+void CFileStream::readBytesTo(uint8_t* out_buffer, std::size_t len){
 	assert(mode == OpenMode::In);
 	base.read((char*)out_buffer, len);
 }
 
-std::string CFileStream::readString(size_t len){
+std::string CFileStream::readString(std::size_t len){
 	assert(mode == OpenMode::In);
     std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
     base.read(&str[0], len);
     return str;
 }
 
-std::string CFileStream::peekString(size_t at, size_t len){
+std::string CFileStream::peekString(std::size_t at, std::size_t len){
 	assert(mode == OpenMode::In);
     std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
-	size_t cur = base.tellg();
+	std::size_t cur = base.tellg();
 	base.seekg(at, base.beg);
     base.read(&str[0], len);
 	base.seekg(cur, base.beg);
     return str;
 }
 
-std::string CFileStream::readWString(size_t len){
+std::string CFileStream::readWString(std::size_t len){
 	assert(mode == OpenMode::In);
     std::string str(len, '\0'); //creates string str at size of length and fills it with '\0'
     base.read(&str[0], len);
@@ -510,12 +510,12 @@ void CFileStream::writeString(std::string v){
 	base.write(v.c_str(), v.size());
 }
 
-void CFileStream::writeBytes(uint8_t* v, size_t size){
+void CFileStream::writeBytes(uint8_t* v, std::size_t size){
 	assert(mode == OpenMode::Out);
 	base.write((char*)v, size);
 }
 
-uint8_t CFileStream::peekUInt8(size_t offset){
+uint8_t CFileStream::peekUInt8(std::size_t offset){
 	assert(mode == OpenMode::In);
 	uint8_t ret;
 	int pos = (int)base.tellg();
@@ -525,7 +525,7 @@ uint8_t CFileStream::peekUInt8(size_t offset){
 	return ret;
 }
 
-int8_t CFileStream::peekInt8(size_t offset){
+int8_t CFileStream::peekInt8(std::size_t offset){
 	assert(mode == OpenMode::In);
 	int8_t ret;
 	int pos = (int)base.tellg();
@@ -535,7 +535,7 @@ int8_t CFileStream::peekInt8(size_t offset){
 	return ret;
 }
 
-uint16_t CFileStream::peekUInt16(size_t offset){
+uint16_t CFileStream::peekUInt16(std::size_t offset){
 	assert(mode == OpenMode::In);
 	uint16_t ret;
 	int pos = (int)base.tellg();
@@ -545,7 +545,7 @@ uint16_t CFileStream::peekUInt16(size_t offset){
 	return ret;
 }
 
-int16_t CFileStream::peekInt16(size_t offset){
+int16_t CFileStream::peekInt16(std::size_t offset){
 	assert(mode == OpenMode::In);
 	int16_t ret;
 	int pos = (int)base.tellg();
@@ -555,7 +555,7 @@ int16_t CFileStream::peekInt16(size_t offset){
 	return ret;
 }
 
-uint32_t CFileStream::peekUInt32(size_t offset){
+uint32_t CFileStream::peekUInt32(std::size_t offset){
 	assert(mode == OpenMode::In);
 	uint32_t ret;
 	int pos = (int)base.tellg();
@@ -565,7 +565,7 @@ uint32_t CFileStream::peekUInt32(size_t offset){
 	return ret;
 }
 
-int32_t CFileStream::peekInt32(size_t offset){
+int32_t CFileStream::peekInt32(std::size_t offset){
 	assert(mode == OpenMode::In);
 	int32_t ret;
 	int pos = (int)base.tellg();
@@ -575,10 +575,10 @@ int32_t CFileStream::peekInt32(size_t offset){
 	return ret;
 }
 
-size_t CFileStream::getSize(){
+std::size_t CFileStream::getSize(){
 	int pos = (int)base.tellg();
 	base.seekg(0, std::ios::end);
-	size_t ret = base.tellg();
+	std::size_t ret = base.tellg();
 	base.seekg(pos, std::ios::beg);
 	return ret;
 }
@@ -590,7 +590,7 @@ size_t CFileStream::getSize(){
 ///
 
 
-CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode mode){
+CMemoryStream::CMemoryStream(uint8_t* ptr, std::size_t size, Endianess ord, OpenMode mode){
 	mBuffer = ptr;
 	mPosition = 0;
 	mSize = size;
@@ -601,7 +601,7 @@ CMemoryStream::CMemoryStream(uint8_t* ptr, size_t size, Endianess ord, OpenMode 
 	systemOrder = getSystemEndianess();
 }
 
-CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
+CMemoryStream::CMemoryStream(std::size_t size, Endianess ord, OpenMode mode){
 	mBuffer = new uint8_t[size]{};
 	mPosition = 0;
 	mSize = size;
@@ -612,11 +612,11 @@ CMemoryStream::CMemoryStream(size_t size, Endianess ord, OpenMode mode){
 	systemOrder = getSystemEndianess();
 }
 
-size_t CMemoryStream::getSize(){
+std::size_t CMemoryStream::getSize(){
 	return mSize;
 }
 
-size_t CMemoryStream::getCapacity(){
+std::size_t CMemoryStream::getCapacity(){
 	return mCapacity;
 }
 
@@ -631,7 +631,7 @@ bool CMemoryStream::changeMode(OpenMode mode){
 	return true;
 }
 
-bool CMemoryStream::seek(size_t pos, bool fromCurrent){
+bool CMemoryStream::seek(std::size_t pos, bool fromCurrent){
 	if(fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false; 
 	
 	if(fromCurrent){
@@ -645,11 +645,11 @@ bool CMemoryStream::seek(size_t pos, bool fromCurrent){
 	return true;
 }
 
-void CMemoryStream::skip(size_t amount){
+void CMemoryStream::skip(std::size_t amount){
 	mPosition += (mPosition + amount < mSize ? amount : 0);
 }
 
-size_t CMemoryStream::tell(){
+std::size_t CMemoryStream::tell(){
 	return mPosition;
 }
 
@@ -778,21 +778,21 @@ double CMemoryStream::readDouble(){
 /// Memstream Peek Functions
 ///
 
-int8_t CMemoryStream::peekInt8(size_t at){
+int8_t CMemoryStream::peekInt8(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	int8_t r;
 	memcpy(&r, OffsetPointer<int8_t>(mBuffer, at), sizeof(int8_t));
 	return r;
 }
 
-uint8_t CMemoryStream::peekUInt8(size_t at){
+uint8_t CMemoryStream::peekUInt8(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	uint8_t r;
 	memcpy(&r, OffsetPointer<uint8_t>(mBuffer, at), sizeof(uint8_t));
 	return r;
 }
 
-int16_t CMemoryStream::peekInt16(size_t at){
+int16_t CMemoryStream::peekInt16(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	int16_t r;
 	memcpy(&r, OffsetPointer<int16_t>(mBuffer, at), sizeof(int16_t));
@@ -805,7 +805,7 @@ int16_t CMemoryStream::peekInt16(size_t at){
 	}
 }
 
-uint16_t CMemoryStream::peekUInt16(size_t at){
+uint16_t CMemoryStream::peekUInt16(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	uint16_t r;
 	memcpy(&r, OffsetPointer<uint16_t>(mBuffer, at), sizeof(uint16_t));
@@ -818,7 +818,7 @@ uint16_t CMemoryStream::peekUInt16(size_t at){
 	}
 }
 
-uint32_t CMemoryStream::peekUInt32(size_t at){
+uint32_t CMemoryStream::peekUInt32(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	uint32_t r;
 	memcpy(&r, OffsetPointer<uint32_t>(mBuffer, at), sizeof(uint32_t));
@@ -831,7 +831,7 @@ uint32_t CMemoryStream::peekUInt32(size_t at){
 	}
 }
 
-int32_t CMemoryStream::peekInt32(size_t at){
+int32_t CMemoryStream::peekInt32(std::size_t at){
 	assert(mOpenMode == OpenMode::In && at < mSize);
 	int32_t r;
 	memcpy(&r, OffsetPointer<int32_t>(mBuffer, at), sizeof(int32_t));
@@ -844,21 +844,21 @@ int32_t CMemoryStream::peekInt32(size_t at){
 	}
 }
 
-std::string CMemoryStream::readString(size_t len){
+std::string CMemoryStream::readString(std::size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	std::string str(OffsetPointer<char>(mBuffer, mPosition),OffsetPointer<char>(mBuffer, mPosition+len));
 	mPosition += len;
 	return str;
 }
 
-std::string CMemoryStream::peekString(size_t at, size_t len){
+std::string CMemoryStream::peekString(std::size_t at, std::size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	std::string str(OffsetPointer<char>(mBuffer, at), OffsetPointer<char>(mBuffer, at+len));
 	return str;
 }
 
 //I don't like this set up, but for now it works
-void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
+void CMemoryStream::readBytesTo(uint8_t* out_buffer, std::size_t len){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
 	if(mPosition + len <= mSize){
 		memcpy(out_buffer, OffsetPointer<char>(mBuffer, mPosition), len);
@@ -871,7 +871,7 @@ void CMemoryStream::readBytesTo(uint8_t* out_buffer, size_t len){
 /// Memstream Writing Functions
 ///
 
-bool CMemoryStream::setSize(size_t size) {
+bool CMemoryStream::setSize(std::size_t size) {
 	if(mCapacity >= size){
 		mSize = size;
 		return true;
@@ -891,7 +891,7 @@ bool CMemoryStream::setSize(size_t size) {
 }
 
 //included in writing functions because this is needed when using an internal buffer
-bool CMemoryStream::Reserve(size_t needed){
+bool CMemoryStream::Reserve(std::size_t needed){
 	if(mCapacity >= needed){
 		return true;
 	}
@@ -1007,7 +1007,7 @@ void CMemoryStream::writeDouble(double v){
 
 //TODO: Clean these up and test them more
 
-void CMemoryStream::writeBytes(uint8_t* bytes, size_t size){
+void CMemoryStream::writeBytes(uint8_t* bytes, std::size_t size){
 	Reserve(mPosition + size);
 	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), bytes, size);
 	mPosition += size;
