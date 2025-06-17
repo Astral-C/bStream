@@ -81,6 +81,8 @@ class CStream {
 		virtual void readBytesTo(uint8_t*, std::size_t) = 0;
 		virtual void writeBytes(uint8_t*, std::size_t) = 0;
 		
+		void writeOffsetAt16(std::size_t);
+		void writeOffsetAt32(std::size_t);
 
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(std::size_t, std::size_t) = 0;
@@ -130,6 +132,9 @@ public:
 	void writeDouble(double);
 	void writeBytes(uint8_t*, std::size_t);
 	void writeString(std::string);
+
+	void writeOffsetAt16(std::size_t);
+	void writeOffsetAt32(std::size_t);
 
 	//utility functions
 	std::size_t getSize();
@@ -210,6 +215,9 @@ class CMemoryStream : public CStream {
 		void writeFloat(float);
 		void writeBytes(uint8_t*, std::size_t);
 		void writeString(std::string);
+
+		void writeOffsetAt16(std::size_t);
+		void writeOffsetAt32(std::size_t);
 
 		std::string readString(std::size_t);
 		std::string peekString(std::size_t, std::size_t);
@@ -504,6 +512,29 @@ void CFileStream::writeDouble(double v){
 	base.write((char*)&v, sizeof(double));
 }
 
+void CFileStream::writeOffsetAt16(std::size_t at){
+	assert(mode == OpenMode::Out);
+	uint32_t offset = base.tellg();
+	uint16_t writeOffset = offset & 0xFFFF;
+	if(order != systemOrder){
+		writeOffset = swap16(writeOffset);
+	}
+	base.seekg(at);
+	base.write((char*)&writeOffset, sizeof(uint32_t));
+	base.seekg(offset);
+}
+
+void CFileStream::writeOffsetAt32(std::size_t at){
+	assert(mode == OpenMode::Out);
+	uint32_t offset = base.tellg();
+	uint32_t writeOffset = offset;
+	if(order != systemOrder){
+		writeOffset = swap32(writeOffset);
+	}
+	base.seekg(at);
+	base.write((char*)&writeOffset, sizeof(uint32_t));
+	base.seekg(offset);
+}
 
 void CFileStream::writeString(std::string v){
 	assert(mode == OpenMode::Out);
@@ -1017,6 +1048,24 @@ void CMemoryStream::writeString(std::string str){
 	Reserve(mPosition + str.size());
 	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), str.data(), str.size());
 	mPosition += str.size();
+}
+
+void CMemoryStream::writeOffsetAt16(std::size_t at){
+	Reserve(mPosition + sizeof(uint16_t));
+	uint16_t offset = mPosition & 0xFFFF;
+	if(order != systemOrder){
+		offset = swap16(offset);
+	}
+	memcpy(OffsetWritePointer<uint16_t>(mBuffer, at), &offset, sizeof(uint16_t));
+}
+
+void CMemoryStream::writeOffsetAt32(std::size_t at){
+	Reserve(mPosition + sizeof(uint32_t));
+	uint32_t offset = mPosition;
+	if(order != systemOrder){
+		offset = swap32(offset);
+	}
+	memcpy(OffsetWritePointer<uint32_t>(mBuffer, at), &offset, sizeof(uint32_t));
 }
 
 }
