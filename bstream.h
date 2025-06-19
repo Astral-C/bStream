@@ -43,7 +43,7 @@ class CStream {
 		virtual bool seek(std::size_t, bool = false) = 0;
 		virtual void skip(std::size_t) = 0;
 		virtual std::size_t tell() = 0;
-		
+
 		virtual std::size_t getSize() = 0;
 
 		virtual uint8_t readUInt8() = 0;
@@ -74,15 +74,17 @@ class CStream {
 
 		virtual void writeInt32(int32_t) = 0;
 		virtual void writeUInt32(uint32_t) = 0;
-		
+
 		virtual void writeInt16(int16_t) = 0;
 		virtual void writeUInt16(uint16_t) = 0;
 
 		virtual void readBytesTo(uint8_t*, std::size_t) = 0;
 		virtual void writeBytes(uint8_t*, std::size_t) = 0;
-		
-		void writeOffsetAt16(std::size_t);
-		void writeOffsetAt32(std::size_t);
+
+		virtual void alignTo(std::size_t) = 0;
+
+		virtual void writeOffsetAt16(std::size_t) = 0;
+		virtual void writeOffsetAt32(std::size_t) = 0;
 
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(std::size_t, std::size_t) = 0;
@@ -133,6 +135,8 @@ public:
 	void writeBytes(uint8_t*, std::size_t);
 	void writeString(std::string);
 
+	void alignTo(std::size_t);
+
 	void writeOffsetAt16(std::size_t);
 	void writeOffsetAt32(std::size_t);
 
@@ -148,7 +152,7 @@ public:
 
 	int16_t peekInt16(std::size_t);
 	uint16_t peekUInt16(std::size_t);
-	
+
 	int32_t peekInt32(std::size_t);
 	uint32_t peekUInt32(std::size_t);
 
@@ -173,14 +177,14 @@ class CMemoryStream : public CStream {
 		OpenMode mOpenMode;
 		Endianess order;
 		Endianess systemOrder;
-	
+
 	public:
 		bool Reserve(std::size_t);
 		bool setSize(std::size_t);
 
 		std::size_t getSize();
 		std::size_t getCapacity();
-		
+
 		int8_t readInt8();
 		uint8_t readUInt8();
 
@@ -204,7 +208,7 @@ class CMemoryStream : public CStream {
 
 		void writeInt8(int8_t);
 		void writeUInt8(uint8_t);
-		
+
 		void writeInt16(int16_t);
 		void writeUInt16(uint16_t);
 
@@ -215,6 +219,8 @@ class CMemoryStream : public CStream {
 		void writeFloat(float);
 		void writeBytes(uint8_t*, std::size_t);
 		void writeString(std::string);
+
+		void alignTo(std::size_t);
 
 		void writeOffsetAt16(std::size_t);
 		void writeOffsetAt32(std::size_t);
@@ -512,6 +518,12 @@ void CFileStream::writeDouble(double v){
 	base.write((char*)&v, sizeof(double));
 }
 
+
+void CFileStream::alignTo(std::size_t to){
+    std::size_t nextAligned = (-base.tellg() % to) % to;
+    for(int i = 0; i < nextAligned; i++) writeUInt8(0);
+}
+
 void CFileStream::writeOffsetAt16(std::size_t at){
 	assert(mode == OpenMode::Out);
 	uint32_t offset = base.tellg();
@@ -627,7 +639,7 @@ CMemoryStream::CMemoryStream(uint8_t* ptr, std::size_t size, Endianess ord, Open
 	mSize = size;
 	mCapacity = size;
 	mHasInternalBuffer = false;
-	mOpenMode = mode; 
+	mOpenMode = mode;
 	order = ord;
 	systemOrder = getSystemEndianess();
 }
@@ -663,16 +675,16 @@ bool CMemoryStream::changeMode(OpenMode mode){
 }
 
 bool CMemoryStream::seek(std::size_t pos, bool fromCurrent){
-	if(fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false; 
-	
+	if(fromCurrent && mPosition + pos > mCapacity || pos > mCapacity) return false;
+
 	if(fromCurrent){
 		mPosition += pos;
 	} else {
 		mPosition = pos;
 	}
-	
+
 	if(mPosition > mSize) mSize = mPosition;
-	
+
 	return true;
 }
 
@@ -767,7 +779,7 @@ int32_t CMemoryStream::readInt32(){
 
 float CMemoryStream::readFloat(){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
-	
+
 	char buff[sizeof(float)];
 	memcpy(&buff, OffsetPointer<int32_t>(mBuffer, mPosition), sizeof(float));
 	mPosition += sizeof(float);
@@ -787,7 +799,7 @@ float CMemoryStream::readFloat(){
 
 double CMemoryStream::readDouble(){
 	assert(mOpenMode == OpenMode::In && mPosition < mSize);
-	
+
 	char buff[sizeof(double)];
 	memcpy(&buff, OffsetPointer<double>(mBuffer, mPosition), sizeof(float));
 	mPosition += sizeof(double);
@@ -1048,6 +1060,13 @@ void CMemoryStream::writeString(std::string str){
 	Reserve(mPosition + str.size());
 	memcpy(OffsetWritePointer<uint8_t>(mBuffer, mPosition), str.data(), str.size());
 	mPosition += str.size();
+}
+
+void CMemoryStream::alignTo(std::size_t to){
+    std::size_t nextAligned = (-mPosition % to) % to;
+    Reserve(mPosition+nextAligned);
+    memset(OffsetWritePointer<uint8_t>(mBuffer, mPosition), 0, nextAligned);
+    mPosition += nextAligned;
 }
 
 void CMemoryStream::writeOffsetAt16(std::size_t at){
