@@ -89,6 +89,8 @@ class CStream {
 		virtual void writeString(std::string) = 0;
 		virtual std::string peekString(std::size_t, std::size_t) = 0;
 		virtual std::string readString(std::size_t) = 0;
+
+		virtual Endianess getOrder() = 0;
 };
 
 class CFileStream : public CStream {
@@ -140,6 +142,8 @@ public:
 	void writeOffsetAt16(std::size_t);
 	void writeOffsetAt32(std::size_t);
 
+	Endianess getOrder();
+
 	//utility functions
 	std::size_t getSize();
 	std::size_t tell();
@@ -163,7 +167,7 @@ public:
 	CFileStream(std::string, Endianess, OpenMode mod = OpenMode::In);
 	CFileStream(std::string, OpenMode mod = OpenMode::In);
 	CFileStream() {}
-	~CFileStream() {this->base.close();}
+	~CFileStream() { this->base.close(); }
 };
 
 class CMemoryStream : public CStream {
@@ -224,6 +228,8 @@ class CMemoryStream : public CStream {
 
 		void writeOffsetAt16(std::size_t);
 		void writeOffsetAt32(std::size_t);
+
+		Endianess getOrder();
 
 		std::string readString(std::size_t);
 		std::string peekString(std::size_t, std::size_t);
@@ -546,6 +552,10 @@ void CFileStream::writeOffsetAt32(std::size_t at){
 	base.seekg(at);
 	base.write((char*)&writeOffset, sizeof(uint32_t));
 	base.seekg(offset);
+}
+
+Endianess CFileStream::getOrder(){
+    return order;
 }
 
 void CFileStream::writeString(std::string v){
@@ -1085,6 +1095,10 @@ void CMemoryStream::writeOffsetAt32(std::size_t at){
 		offset = swap32(offset);
 	}
 	memcpy(OffsetWritePointer<uint32_t>(mBuffer, at), &offset, sizeof(uint32_t));
+}
+
+Endianess CMemCMemoryStream::getOrder(){
+    return order;
 }
 
 }
