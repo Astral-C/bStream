@@ -1097,7 +1097,7 @@ void CMemoryStream::writeOffsetAt32(std::size_t at){
 	memcpy(OffsetWritePointer<uint32_t>(mBuffer, at), &offset, sizeof(uint32_t));
 }
 
-Endianess CMemCMemoryStream::getOrder(){
+Endianess CMemoryStream::getOrder(){
     return order;
 }
 
