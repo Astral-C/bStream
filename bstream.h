@@ -91,6 +91,7 @@ class CStream {
 		virtual std::string readString(std::size_t) = 0;
 
 		virtual Endianess getOrder() = 0;
+		virtual void setOrder(Endianess) = 0;
 };
 
 class CFileStream : public CStream {
@@ -143,6 +144,7 @@ public:
 	void writeOffsetAt32(std::size_t);
 
 	Endianess getOrder();
+	void setOrder(Endianess);
 
 	//utility functions
 	std::size_t getSize();
@@ -230,6 +232,7 @@ class CMemoryStream : public CStream {
 		void writeOffsetAt32(std::size_t);
 
 		Endianess getOrder();
+		void setOrder(Endianess);
 
 		std::string readString(std::size_t);
 		std::string peekString(std::size_t, std::size_t);
@@ -556,6 +559,10 @@ void CFileStream::writeOffsetAt32(std::size_t at){
 
 Endianess CFileStream::getOrder(){
     return order;
+}
+
+void CFileStream::setOrder(Endianess e){
+    order = e;
 }
 
 void CFileStream::writeString(std::string v){
@@ -1099,6 +1106,10 @@ void CMemoryStream::writeOffsetAt32(std::size_t at){
 
 Endianess CMemoryStream::getOrder(){
     return order;
+}
+
+void CMemoryStream::setOrder(Endianess e){
+    order = e;
 }
 
 }
